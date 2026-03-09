@@ -13,14 +13,16 @@ Konstytucja dotyczy rozwoju, utrzymania i ewolucji uniwersalnych kart Lovelace d
 
 ### II. Bezpieczeństwo i odporność na błędy
 
-- Cała logika działa w przeglądarce użytkownika, bez własnego backendu; nie wolno implementować własnych mechanizmów uwierzytelniania ani przechowywać tokenów dostępowych poza tym, co zapewnia Home Assistant.
+- Cała logika działa wyłącznie w przeglądarce użytkownika i komunikuje się z Home Assistantem wyłącznie poprzez natywne API kart Lovelace oraz oficjalne mechanizmy HA – bez własnych, niestandardowych kanałów komunikacji.
+- Wejścia z YAML, Storage UI oraz wartości z encji są traktowane jako dane nieufne: podlegają rygorystycznej sanityzacji i walidacji (m.in. ochrona przed XSS, filtrowanie HTML, bezpośredniego wstrzykiwania skryptów i niebezpiecznych atrybutów).
 - Dane konfiguracyjne i stany nie mogą zawierać wrażliwych informacji ujawnianych w UI, logach czy komunikatach błędów.
 - Karta musi być odporna na brakujące encje, niespójne dane, nietypowe jednostki oraz błędne konfiguracje – zamiast crasha: czytelny, nienachalny komunikat dla użytkownika.
-- Wszystkie operacje na danych muszą być defensywne: sprawdzanie typów, zakresów, istnienia atrybutów, z sensownymi wartościami domyślnymi.
+- Wszystkie operacje na danych muszą być defensywne: sprawdzanie typów, zakresów, istnienia atrybutów, z sensownymi wartościami domyślnymi i wariantami „graceful degradation”, które nie blokują działania całego dashboardu.
 - Błędy powinny być logowane w sposób pomagający w diagnostyce, ale bez ujawniania prywatnych danych.
 
 ### III. Jakość kodu, testy i utrzymanie
 
+- Cały kod aplikacyjny jest tworzony w TypeScript z rygorystycznymi ustawieniami kompilatora (`strict`, ścisłe typowanie, unikanie `any`) oraz dbałością o poprawne modele typów dla encji i konfiguracji YAML.
 - Kod frontendu opiera się na rekomendowanych technologiach dla kart HA (np. Web Components/Lit) oraz jest modularny, czytelny i konsekwentnie sformatowany.
 - Kluczowe funkcje (np. agregacja danych, przeliczanie energii, logika zakresów czasowych) muszą być pokryte testami jednostkowymi lub przynajmniej łatwe do przetestowania.
 - Zmiany funkcjonalne wymagają aktualizacji dokumentacji, przykładów konfiguracji oraz – jeśli dotyczy – zrzutów ekranu.
@@ -44,7 +46,7 @@ Konstytucja dotyczy rozwoju, utrzymania i ewolucji uniwersalnych kart Lovelace d
 ## Dodatkowe wymagania i ograniczenia
 
 - Projekt utrzymuje spójny styl pracy z ekosystemem open‑source: przejrzysty `README`, jasne zasady zgłaszania problemów i kontrybucji, szacunek dla użytkowników i współtwórców.
-- Biblioteki zewnętrzne dobieramy rozważnie: preferujemy lekkie, dobrze utrzymane, szeroko stosowane pakiety; unikamy nadmiernych zależności i „vendor lock‑in”.
+- Biblioteki zewnętrzne dobieramy rozważnie: preferujemy lekkie, dobrze utrzymane, szeroko stosowane pakiety; unikamy nadmiernych zależności i „vendor lock‑in”, a każda nowa zależność NPM musi być uzasadniona i nie duplikować funkcjonalności dostępnej natywnie lub w istniejącym kodzie.
 - Wszelkie operacje na danych energii powinny szanować lokalne uwarunkowania (strefa czasowa, jednostki, formaty dat/liczb) i jak najpełniej wykorzystywać natywne możliwości Home Assistant.
 - Funkcje eksperymentalne lub „zaawansowane” muszą być wyraźnie oznaczone i domyślnie nie powinny komplikować podstawowego doświadczenia użytkownika.
 

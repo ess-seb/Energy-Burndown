@@ -1,7 +1,16 @@
 import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type { HomeAssistant, LovelaceCard } from "../ha-types";
-import type { CardConfig, CardState } from "./types";
+import type { CardConfig, CardState, ComparisonSeries } from "./types";
+import {
+  buildComparisonPeriod,
+  buildLtsQuery,
+  mapLtsResponseToSeries,
+  computeSummary,
+  computeForecast,
+  computeTextSummary
+} from "./ha-api";
+import { ChartRenderer } from "./chart-renderer";
 
 @customElement("energy-burndown-card")
 export class EnergyBurndownCard
@@ -13,6 +22,8 @@ export class EnergyBurndownCard
   @state() private _config!: CardConfig;
   @state() private _state: CardState = { status: "loading" };
 
+  private _chartRenderer?: ChartRenderer;
+
   public setConfig(config: CardConfig): void {
     this._config = config;
     this._state = { status: "loading" };
@@ -20,6 +31,80 @@ export class EnergyBurndownCard
 
   public getCardSize(): number {
     return 4;
+  }
+
+  protected firstUpdated(): void {
+    const canvas = this.renderRoot.querySelector("canvas") as
+      | HTMLCanvasElement
+      | null;
+    if (canvas) {
+      this._chartRenderer = new ChartRenderer(canvas);
+    }
+  }
+
+  protected updated(changedProps: Map<string, unknown>): void {
+    if (
+      changedProps.has("hass") ||
+      changedProps.has("_config") ||
+      changedProps.has("_state")
+    ) {
+      if (this._state.status === "loading") {
+        void this._loadData();
+      }
+
+      if (
+        this._state.status === "ready" &&
+        this._state.comparisonSeries &&
+        this._chartRenderer
+      ) {
+        this._chartRenderer.update(this._state.comparisonSeries);
+      }
+    }
+  }
+
+  private async _loadData(): Promise<void> {
+    if (!this._config || !this.hass) return;
+
+    const now = new Date();
+    const timeZone = "UTC";
+    const period = buildComparisonPeriod(this._config, now, timeZone);
+    const query = buildLtsQuery(period, this._config.entity);
+
+    try {
+      const response = await this.hass.connection.sendMessagePromise(
+        query as unknown as Record<string, unknown>
+      );
+
+      const series = mapLtsResponseToSeries(
+        response as any,
+        this._config.entity,
+        period
+      ) as ComparisonSeries | undefined;
+
+      if (!series) {
+        this._state = { status: "no-data" };
+        return;
+      }
+
+      const summary = computeSummary(series);
+      const forecast = computeForecast(series);
+      const textSummary = computeTextSummary(summary);
+
+      this._state = {
+        status: "ready",
+        comparisonSeries: series,
+        summary,
+        forecast,
+        textSummary
+      };
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(e);
+      this._state = {
+        status: "error",
+        errorMessage: "Nie udało się pobrać danych statystyk długoterminowych."
+      };
+    }
   }
 
   protected render() {
@@ -53,9 +138,14 @@ export class EnergyBurndownCard
       </ha-card>`;
     }
 
+    const heading = this._state.textSummary?.heading;
+
     return html`<ha-card>
       <div class="content">
-        <div class="placeholder">Energy Burndown Card – wykres w przygotowaniu.</div>
+        ${heading ? html`<div class="heading">${heading}</div>` : null}
+        <div class="chart-container">
+          <canvas></canvas>
+        </div>
       </div>
     </ha-card>`;
   }
@@ -74,6 +164,16 @@ export class EnergyBurndownCard
 
     .content {
       padding: 16px;
+    }
+
+    .heading {
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 200px;
     }
   `;
 }

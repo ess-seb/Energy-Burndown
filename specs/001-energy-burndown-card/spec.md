@@ -73,6 +73,14 @@ Użytkownik chciałby zobaczyć przewidywaną łączną wartość zużycia energ
 - Jak system reaguje, gdy zakres czasu obejmuje rok przestępny, a okres referencyjny – nie (lub odwrotnie)?
 - Jak karta zachowuje się na bardzo małych ekranach (telefon) oraz przy bardzo wąskich kafelkach na dashboardzie (np. czytelność etykiet osi czasu)?
 
+### Założenia platformowe i kompatybilność
+
+- Minimalna wspierana wersja Home Assistant to **2024.6** (lub nowsza).
+  - Karta **nie gwarantuje kompatybilności wstecznej** z wersjami HA sprzed 2024.6.
+- Zakres wsparcia UI:
+  - Karta jest projektowana i testowana pod **domyślny interfejs Lovelace**.
+  - Integracja z alternatywnymi / customowymi UI (np. niestandardowe dashboardy, frameworki UI spoza core Lovelace) jest **poza zakresem** – brak gwarancji poprawnego działania w takich środowiskach.
+
 ## Requirements *(mandatory)*
 
 <!--

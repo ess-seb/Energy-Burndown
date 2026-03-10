@@ -20,6 +20,7 @@ Technicznie karta będzie pojedynczym web komponentem LitElement, budowanym prze
 **Project Type**: Frontend library / custom Lovelace card (web component)  
 **Performance Goals**: Render karty subiektywnie „prawie natychmiastowy” przy przejściu na dashboard; liczba punktów na wykresie typowo < 400 (np. ~365 dni), pełne przetwarzanie po stronie backendu (tylko już zagregowane statystyki w przeglądarce)  
 **Constraints**: Zgodność z API Lovelace i themingiem HA; brak sztywnych kolorów (wyłącznie zmienne CSS HA z opcjonalnymi fallbackami); wszystkie zapytania do danych przez oficjalne WebSocket API i obiekt `hass.connection`; brak dodatkowego backendu; defensywne zachowanie przy brakach danych  
+**Compatibility**: Minimalna wspierana wersja Home Assistant to **2024.6**; brak gwarancji kompatybilności z wersjami wcześniejszymi. Karta jest projektowana wyłącznie pod standardowy interfejs Lovelace – customowe UI i alternatywne frameworki dashboardów nie są oficjalnie wspierane.
 **Scale/Scope**: Pojedyncza karta działająca jednocześnie w wielu instancjach na dashboardzie; każda instancja może wykonywać własne zapytanie do LTS, więc należy unikać duplikowania ciężkich obliczeń w przeglądarce i wspierać cache’owanie wyników na czas życia karty.
 
 ### Locale & Formatting

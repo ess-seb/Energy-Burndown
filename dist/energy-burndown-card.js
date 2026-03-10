@@ -593,7 +593,7 @@ function ea(n, t) {
   };
 }
 function na(n, t, e) {
-  const s = (n.result ?? n).results;
+  const i = n.result ?? n, s = i.results ?? i;
   if (!s || typeof s != "object") return;
   let r = s[t];
   if (!r || r.length === 0) {
@@ -11213,19 +11213,22 @@ const On = class On extends De {
         s
       );
       if (this._config.debug) {
-        const u = ((r == null ? void 0 : r.result) ?? r).results;
+        const h = (r == null ? void 0 : r.result) ?? r, u = h.results ?? h;
         if (console.log("[Energy Burndown] API Response (raw):", r), u && typeof u == "object") {
+          const d = Object.keys(u);
           console.log(
             "[Energy Burndown] Results keys (available statistic_ids):",
-            Object.keys(u)
+            d
           );
-          const d = u[this._config.entity];
+          const f = u[this._config.entity];
           console.log(
             `[Energy Burndown] Data for entity "${this._config.entity}":`,
-            d ? `${Array.isArray(d) ? d.length : 0} points` : "not found"
+            f ? `${Array.isArray(f) ? f.length : 0} points` : "not found"
           );
         } else
-          console.log("[Energy Burndown] No 'results' in response or invalid structure");
+          console.log(
+            "[Energy Burndown] No results in response or invalid structure"
+          );
       }
       const o = na(
         r,

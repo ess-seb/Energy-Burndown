@@ -87,6 +87,7 @@ description: "Tasks for implementing Energy Burndown Cumulative Comparison Card"
 - [ ] T020 [P] [US2] Rozszerz logikę przetwarzania danych o wyliczanie `SummaryStats` (bieżące i referencyjne skumulowane wartości, różnice) w `src/card/ha-api.ts` lub dedykowanym helperze
 - [ ] T021 [US2] Zaimplementuj sekcję podsumowania w `render()` (dwie wyraźnie opisane wartości + różnica, z jednostką) w `src/card/cumulative-comparison-chart.ts`
 - [ ] T022 [US2] Obsłuż niekompletne dane referencyjne (np. brak dnia w okresie referencyjnym) – komunikat o niekompletności / pominięcie porównania liczbowego bez błędów renderowania w `src/card/cumulative-comparison-chart.ts`
+- [ ] T023 [US2] Zaimplementuj generowanie nagłówka tekstowego `TextSummary.heading` na podstawie `SummaryStats` (logika „wyższe/niższe/podobne/nieznane” zgodnie z FR-009) i wyświetl go w górnej części karty w `src/card/cumulative-comparison-chart.ts`
 
 **Checkpoint**: User Story 1 + 2 gotowe – karta prezentuje zarówno wykres, jak i czytelne wartości skumulowane dla obu okresów.
 
@@ -100,13 +101,13 @@ description: "Tasks for implementing Energy Burndown Cumulative Comparison Card"
 
 ### Tests for User Story 3
 
-- [ ] T023 [P] [US3] Dodaj testy jednostkowe dla wyliczania `ForecastStats` (średnie dzienne, ekstrapolacja, poziom pewności) w `tests/unit/aggregation.test.ts`
+- [ ] T024 [P] [US3] Dodaj testy jednostkowe dla wyliczania `ForecastStats` (średnie dzienne, ekstrapolacja, poziom pewności) w `tests/unit/aggregation.test.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T024 [P] [US3] Zaimplementuj logikę prognozy (`ForecastStats`): ekstrapolacja na podstawie dotychczasowego trendu, próg minimalnej liczby punktów, wyliczanie `confidence` w `src/card/ha-api.ts` lub dedykowanym helperze
-- [ ] T025 [US3] Rozszerz sekcję podsumowania o prognozę końcowego zużycia bieżącego okresu i historyczną wartość referencyjną, z oznaczeniem poziomu pewności w `src/card/cumulative-comparison-chart.ts`
-- [ ] T026 [US3] Zaimplementuj ostrożne zachowanie przy bardzo krótkiej historii / wysokiej niestabilności danych (np. ukrycie prognozy lub wyświetlenie komunikatu o niskiej pewności) w `src/card/cumulative-comparison-chart.ts`
+- [ ] T025 [P] [US3] Zaimplementuj logikę prognozy (`ForecastStats`): ekstrapolacja na podstawie dotychczasowego trendu, próg minimalnej liczby punktów, wyliczanie `confidence` w `src/card/ha-api.ts` lub dedykowanym helperze
+- [ ] T026 [US3] Rozszerz sekcję podsumowania o prognozę końcowego zużycia bieżącego okresu i historyczną wartość referencyjną, z oznaczeniem poziomu pewności w `src/card/cumulative-comparison-chart.ts`
+- [ ] T027 [US3] Zaimplementuj ostrożne zachowanie przy bardzo krótkiej historii / wysokiej niestabilności danych (np. ukrycie prognozy lub wyświetlenie komunikatu o niskiej pewności) w `src/card/cumulative-comparison-chart.ts`
 
 **Checkpoint**: Wszystkie trzy user stories działają niezależnie – wykres, wartości skumulowane i prognoza są spójne z wymaganiami.
 
@@ -116,11 +117,13 @@ description: "Tasks for implementing Energy Burndown Cumulative Comparison Card"
 
 **Purpose**: Usprawnienia oraz dopracowanie całości rozwiązania.
 
-- [ ] T027 [P] Uzupełnij dokumentację w `specs/001-energy-burndown-card/quickstart.md` o finalne przykłady konfiguracji oraz zrzuty ekranu (jeśli dostępne)
-- [ ] T028 [P] Dodaj dodatkowe testy jednostkowe dla edge case’ów (brak danych LTS, różne jednostki, rok przestępny) w `tests/unit/ha-api.test.ts`
-- [ ] T029 Przejrzyj i uprość kod (refaktoryzacja, usunięcie duplikacji) w `src/card/*`
-- [ ] T030 [P] Zweryfikuj wydajność renderowania karty przy typowych zakresach danych i popraw ewentualne wąskie gardła (np. konfiguracja Chart.js) w `src/card/chart-renderer.ts`
-- [ ] T031 Zweryfikuj zachowanie themingu i trybów dark/light na różnych motywach HA (dostosuj `theme-utils.ts` w razie potrzeby)
+- [ ] T028 [P] Uzupełnij dokumentację w `specs/001-energy-burndown-card/quickstart.md` o finalne przykłady konfiguracji oraz zrzuty ekranu (jeśli dostępne)
+- [ ] T029 [P] Dodaj dodatkowe testy jednostkowe dla edge case’ów (brak danych LTS, różne jednostki, rok przestępny) w `tests/unit/ha-api.test.ts`
+- [ ] T030 Przejrzyj i uprość kod (refaktoryzacja, usunięcie duplikacji) w `src/card/*`
+- [ ] T031 [P] Zweryfikuj wydajność renderowania karty przy typowych zakresach danych i popraw ewentualne wąskie gardła (np. konfiguracja Chart.js) w `src/card/chart-renderer.ts`
+- [ ] T032 Zweryfikuj zachowanie themingu i trybów dark/light na różnych motywach HA (dostosuj `theme-utils.ts` w razie potrzeby)
+- [ ] T033 [P] Zaimplementuj formatowanie dat i liczb zgodnie z sekcją „Locale & Formatting” w `plan.md` (wykorzystanie `hass.locale` / `hass.language` z `Intl.DateTimeFormat` / `Intl.NumberFormat`) w `src/card/cumulative-comparison-chart.ts`
+- [ ] T034 [P] Zweryfikuj, że użycie `<ha-alert>` i `<ha-circular-progress>` w `src/card/cumulative-comparison-chart.ts` jest zgodne z kontraktem opisanym w `specs/001-energy-burndown-card/contracts/ui.md` i wprowadź ewentualne poprawki
 - [ ] T032 [P] Zaimplementuj formatowanie dat i liczb zgodnie z sekcją „Locale & Formatting” w `plan.md` (wykorzystanie `hass.locale` / `hass.language` z `Intl.DateTimeFormat` / `Intl.NumberFormat`) w `src/card/cumulative-comparison-chart.ts`
 - [ ] T033 [P] Zweryfikuj, że użycie `<ha-alert>` i `<ha-circular-progress>` w `src/card/cumulative-comparison-chart.ts` jest zgodne z kontraktem opisanym w `specs/001-energy-burndown-card/contracts/ui.md` i wprowadź ewentualne poprawki
 

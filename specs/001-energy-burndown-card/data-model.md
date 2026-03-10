@@ -204,6 +204,30 @@ Validation rules:
   - `reference_cumulative`, `difference` oraz `differencePercent` pozostają `undefined`,
   - UI wyświetla komunikat w stylu „Dane referencyjne dla tego dnia są niepełne” zamiast liczbowego porównania.
 
+### Entity: `TextSummary`
+
+Reprezentuje zwięzły, zlokalizowany tekst nagłówka interpretujący porównanie bieżącego i referencyjnego zużycia.
+
+Fields:
+- `heading: string`        (gotowy tekst do wyświetlenia w UI, np. „Twoje zużycie jest o 19.01 kWh niższe niż w tym samym okresie w poprzednim roku.”)
+- `trend: "higher" | "lower" | "similar" | "unknown"`  (kategoria trendu do ewentualnego użycia w UI)
+
+Implementation notes:
+- Jeśli `reference_cumulative` jest dostępne i `difference` ≠ 0:
+  - Dla `difference > 0`:
+    - `trend = "higher"`,
+    - Tekst używa słowa odpowiadającego „wyższe” i pokazuje wartość bezwzględną różnicy (np. „o 5.2 kWh wyższe”).
+  - Dla `difference < 0`:
+    - `trend = "lower"`,
+    - Tekst używa słowa odpowiadającego „niższe” i pokazuje wartość bezwzględną różnicy (np. „o 5.2 kWh niższe”).
+- Jeśli wartość bezwzględna różnicy jest bardzo mała (np. `< 0.01` jednostki):
+  - `trend = "similar"`,
+  - Tekst może wskazywać, że zużycie jest „na podobnym poziomie jak w tym samym okresie w poprzednim roku”.
+- Jeśli brak wiarygodnych danych referencyjnych (`reference_cumulative` jest `undefined` z powodów opisanych powyżej):
+  - `trend = "unknown"`,
+  - Tekst jasno komunikuje brak możliwości porównania (np. „Brak wystarczających danych z wcześniejszego okresu, aby porównać zużycie.”).
+- Formatowanie liczb w tekście wykorzystuje te same zasady locale i precyzji co w pozostałych podsumowaniach (zob. sekcja „Locale & Formatting” w `plan.md`).
+
 ### Entity: `ForecastStats`
 
 Fields:

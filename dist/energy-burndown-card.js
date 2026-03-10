@@ -595,7 +595,11 @@ function ea(n, t) {
 function na(n, t, e) {
   const s = (n.result ?? n).results;
   if (!s || typeof s != "object") return;
-  const r = s[t];
+  let r = s[t];
+  if (!r || r.length === 0) {
+    const l = Object.keys(s);
+    l.length === 1 && (r = s[l[0]]);
+  }
   if (!r || r.length === 0) return;
   const { unit: o, timeSeries: a } = ia(r);
   return {
@@ -612,7 +616,7 @@ function ia(n) {
   let t = "";
   const e = [];
   for (const i of n) {
-    const s = i.sum ?? i.state;
+    const s = i.sum ?? i.change ?? i.state;
     if (s != null) {
       if (!t && i.unit_of_measurement)
         t = i.unit_of_measurement;

@@ -102,28 +102,35 @@ The card uses the `recorder/statistics_during_period` API. Use entity IDs that h
 
 ## Forecast calculation
 
-The forecast for the current period is based on the **average daily cumulative usage** observed so far and a simple extrapolation to the full period.
+The forecast for the current period uses a **Historical Index** method that takes into account how the rest of the same month behaved in the previous year.
+
+For daily aggregation we split the month into two parts:
+
+- from day **1** to **yesterday** (completed days),
+- from **today** to the **end of the month**.
 
 Let:
-- **\(n\)** – number of days with data in the current period,
-- **\(C_n\)** – cumulative usage after day \(n\) (sum of daily values from day 1 to \(n\)),
-- **\(D\)** – assumed total number of days in the full period (length of the current month or year, depending on configuration),
-- **\(\bar{d}\)** – average daily usage observed so far.
+- **\(A\)** – sum of usage in the current year from day 1 to yesterday,
+- **\(B\)** – sum of usage in the previous year for the same days (day 1 to yesterday),
+- **\(C\)** – sum of usage in the previous year from today to the end of the month,
+- **\(k\)** – trend factor describing how this year compares to last year.
 
 We compute:
 
 \[
-\bar{d} = \frac{C_n}{n}
+k = \frac{A}{B}
 \]
 
 \[
-\text{forecast\_total} = \bar{d} \cdot D
+\text{forecast\_total} = A + C \cdot k
 \]
 
-The confidence level is derived only from the number of observed days:
-- **low** – fewer than 7 days,
-- **medium** – from 7 to 13 days,
-- **high** – 14 days or more.
+The idea: we assume that the remaining part of the month will behave similarly to the same days last year, but scaled by the current trend \(k\) (you already use more or less energy than a year ago).
+
+The confidence level is derived only from the number of **completed days**:
+- **low** – fewer than 7 completed days,
+- **medium** – from 7 to 13 completed days,
+- **high** – 14 or more completed days.
 
 ## Troubleshooting
 

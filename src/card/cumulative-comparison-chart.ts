@@ -33,15 +33,6 @@ export class EnergyBurndownCard extends LitElement implements LovelaceCard {
     return 4;
   }
 
-  protected firstUpdated(): void {
-    const canvas = this.renderRoot.querySelector("canvas") as
-      | HTMLCanvasElement
-      | null;
-    if (canvas) {
-      this._chartRenderer = new ChartRenderer(canvas);
-    }
-  }
-
   protected updated(changedProps: Map<string, unknown>): void {
     if (
       changedProps.has("hass") ||
@@ -54,10 +45,20 @@ export class EnergyBurndownCard extends LitElement implements LovelaceCard {
 
       if (
         this._state.status === "ready" &&
-        this._state.comparisonSeries &&
-        this._chartRenderer
+        this._state.comparisonSeries
       ) {
-        this._chartRenderer.update(this._state.comparisonSeries);
+        if (!this._chartRenderer) {
+          const canvas = this.renderRoot.querySelector("canvas") as
+            | HTMLCanvasElement
+            | null;
+          if (canvas) {
+            this._chartRenderer = new ChartRenderer(canvas);
+          }
+        }
+
+        if (this._chartRenderer) {
+          this._chartRenderer.update(this._state.comparisonSeries);
+        }
       }
     }
   }
@@ -115,6 +116,11 @@ export class EnergyBurndownCard extends LitElement implements LovelaceCard {
             entityData
               ? `${Array.isArray(entityData) ? entityData.length : 0} points`
               : "not found"
+          );
+          // eslint-disable-next-line no-console
+          console.log(
+            "[Energy Burndown] Reference API Response (raw):",
+            referenceResponse
           );
         } else {
           // eslint-disable-next-line no-console
@@ -214,6 +220,12 @@ export class EnergyBurndownCard extends LitElement implements LovelaceCard {
       this.hass.locale?.language ?? this.hass.language ?? navigator.language;
     const precision = this._config.precision ?? 1;
 
+    // Jeśli z API nie przyszła jednostka, spróbuj użyć tej z encji HA.
+    const fallbackUnit =
+      (this.hass.states?.[this._config.entity]?.attributes as {
+        unit_of_measurement?: string;
+      })?.unit_of_measurement ?? "";
+
     const numberFormatter = new Intl.NumberFormat(locale, {
       minimumFractionDigits: precision,
       maximumFractionDigits: precision
@@ -223,24 +235,26 @@ export class EnergyBurndownCard extends LitElement implements LovelaceCard {
       maximumFractionDigits: 1
     });
 
+    const displayUnit = summary?.unit || fallbackUnit;
+
     const currentSummaryValue =
       summary != null
         ? `${numberFormatter.format(summary.current_cumulative)} ${
-            summary.unit
+            displayUnit
           }`
         : "";
 
     const referenceSummaryValue =
       summary != null && summary.reference_cumulative != null
         ? `${numberFormatter.format(summary.reference_cumulative)} ${
-            summary.unit
+            displayUnit
           }`
         : null;
 
     const differenceValue =
       summary != null && summary.difference != null
         ? `${numberFormatter.format(Math.abs(summary.difference))} ${
-            summary.unit
+            displayUnit
           }`
         : null;
 

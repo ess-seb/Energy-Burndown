@@ -143,9 +143,7 @@ function normalizePoints(points: LtsStatisticPoint[]): {
   for (const p of points) {
     let rawValue: number | undefined;
 
-    if (typeof p.change === "number") {
-      rawValue = p.change;
-    } else if (typeof p.sum === "number") {
+    if (typeof p.sum === "number") {
       if (previousSum === undefined) {
         // Pierwszy punkt przy braku `change` traktujemy jako punkt odniesienia
         // dla bieżącego okresu (różnice liczymy względem niego).
@@ -160,6 +158,8 @@ function normalizePoints(points: LtsStatisticPoint[]): {
         }
         rawValue = delta;
       }
+    } else if (typeof p.change === "number") {
+      rawValue = p.change;
     } else if (typeof p.state === "number") {
       rawValue = p.state;
     }

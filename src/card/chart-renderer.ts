@@ -25,6 +25,7 @@ Chart.register(
 
 export class ChartRenderer {
   private chart?: Chart;
+  private lastHash?: string;
 
   constructor(private readonly canvas: HTMLCanvasElement) {}
 
@@ -37,14 +38,27 @@ export class ChartRenderer {
     const ctx = this.canvas.getContext("2d");
     if (!ctx) return;
 
-    const currentData = series.current.points.map((p) => ({
-      x: p.timestamp,
+    const currentData = series.current.points.map((p, index) => ({
+      x: index + 1,
       y: p.value
     }));
 
     const referenceData = series.reference
-      ? series.reference.points.map((p) => ({ x: p.timestamp, y: p.value }))
+      ? series.reference.points.map((p, index) => ({
+          x: index + 1,
+          y: p.value
+        }))
       : [];
+
+    const hash = JSON.stringify({
+      c: currentData,
+      r: referenceData
+    });
+
+    if (this.lastHash === hash && this.chart) {
+      return;
+    }
+    this.lastHash = hash;
 
     const data = {
       datasets: [
@@ -76,6 +90,7 @@ export class ChartRenderer {
     const options = {
       responsive: true,
       maintainAspectRatio: false,
+      animation: false,
       plugins: {
         legend: {
           display: true
@@ -87,9 +102,9 @@ export class ChartRenderer {
       },
       scales: {
         x: {
-          type: "time" as const,
-          time: {
-            unit: "day" as const
+          type: "linear" as const,
+          ticks: {
+            precision: 0
           },
           grid: {
             color: "rgba(255, 255, 255, 0.06)"

@@ -153,15 +153,32 @@ export class EnergyBurndownCard extends LitElement implements LovelaceCard {
         "Okres referencyjny"
       );
 
+      const entityUnit =
+        (this.hass.states?.[this._config.entity]?.attributes as {
+          unit_of_measurement?: string;
+        })?.unit_of_measurement ?? "";
+
       const series: ComparisonSeries = {
-        current,
-        reference: reference ?? undefined,
+        current: entityUnit ? { ...current, unit: current.unit || entityUnit } : current,
+        reference: reference
+          ? entityUnit
+            ? { ...reference, unit: reference.unit || entityUnit }
+            : reference
+          : undefined,
         aggregation: period.aggregation,
         time_zone: period.time_zone
       };
 
       const summary = computeSummary(series);
       const forecast = computeForecast(series);
+
+      if (!summary.unit && entityUnit) {
+        summary.unit = entityUnit;
+      }
+      if (forecast && !forecast.unit && entityUnit) {
+        forecast.unit = entityUnit;
+      }
+
       const textSummary = computeTextSummary(summary);
 
       this._state = {
@@ -266,6 +283,8 @@ export class EnergyBurndownCard extends LitElement implements LovelaceCard {
     const shouldShowForecast =
       forecast != null && forecast.enabled && this._config.show_forecast !== false;
 
+    const forecastUnit = forecast?.unit || displayUnit;
+
     return html`<ha-card>
       <div class="content">
         ${heading ? html`<div class="heading">${heading}</div>` : null}
@@ -314,7 +333,7 @@ export class EnergyBurndownCard extends LitElement implements LovelaceCard {
                 <span class="value"
                   >${numberFormatter.format(
                     forecast.forecast_total ?? 0
-                  )} ${forecast.unit}</span
+                  )} ${forecastUnit}</span
                 >
               </div>
               ${forecast.reference_total != null

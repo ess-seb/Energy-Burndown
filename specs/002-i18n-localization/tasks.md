@@ -42,14 +42,14 @@ description: "Tasks for feature 002-i18n-localization – Energy Burndown Card"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T004 Add `src/translations/en.json` with all required keys from `specs/002-i18n-localization/data-model.md` and `contracts/localize-api.md`
-- [ ] T005 [P] Add `src/translations/pl.json` mirroring keys from `src/translations/en.json` with Polish translations
-- [ ] T006 [P] Update `src/ha-types.ts` to extend `HomeAssistant.locale` with `number_format` and add `config.time_zone` as per `data-model.md`
-- [ ] T007 [P] Update `src/card/types.ts` to add `language?` and `number_format?` fields to `CardConfig` and refactor `TextSummary` type to numeric diff fields only
-- [ ] T008 Implement `src/card/localize.ts` with `TranslationDictionary` loading, `createLocalize(language)`, `resolveLocale(hass, config)` and `numberFormatToLocale(numberFormat, language)` following `contracts/localize-api.md`
-- [ ] T009 [P] Implement variable interpolation in `src/card/localize.ts` using `{{variableName}}` syntax per `research.md` and `data-model.md`
-- [ ] T010 [P] Add unit tests for `createLocalize()` and interpolation behaviour in `tests/unit/localize.test.ts`
-- [ ] T011 [P] Add unit tests for `resolveLocale(hass, config)` and `numberFormatToLocale()` mapping in `tests/unit/localize-locale-resolution.test.ts`
+- [X] T004 Add `src/translations/en.json` with all required keys from `specs/002-i18n-localization/data-model.md` and `contracts/localize-api.md`
+- [X] T005 [P] Add `src/translations/pl.json` mirroring keys from `src/translations/en.json` with Polish translations
+- [X] T006 [P] Update `src/ha-types.ts` to extend `HomeAssistant.locale` with `number_format` and add `config.time_zone` as per `data-model.md`
+- [X] T007 [P] Update `src/card/types.ts` to add `language?` and `number_format?` fields to `CardConfig` and refactor `TextSummary` type to numeric diff fields only
+- [X] T008 Implement `src/card/localize.ts` with `TranslationDictionary` loading, `createLocalize(language)`, `resolveLocale(hass, config)` and `numberFormatToLocale(numberFormat, language)` following `contracts/localize-api.md`
+- [X] T009 [P] Implement variable interpolation in `src/card/localize.ts` using `{{variableName}}` syntax per `research.md` and `data-model.md`
+- [X] T010 [P] Add unit tests for `createLocalize()` and interpolation behaviour in `tests/unit/localize.test.ts`
+- [X] T011 [P] Add unit tests for `resolveLocale(hass, config)` and `numberFormatToLocale()` mapping in `tests/unit/localize-locale-resolution.test.ts`
 
 **Checkpoint**: Localization infrastructure ready – user story implementation can now begin in parallel.
 

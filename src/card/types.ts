@@ -10,6 +10,8 @@ export interface CardConfig {
   show_forecast?: boolean;
   precision?: number;
   debug?: boolean;
+  language?: string;
+  number_format?: "comma" | "decimal" | "language" | "system";
 }
 
 export interface ComparisonPeriod {
@@ -75,8 +77,9 @@ export interface SummaryStats {
 export type Trend = "higher" | "lower" | "similar" | "unknown";
 
 export interface TextSummary {
-  heading: string;
   trend: Trend;
+  diffValue?: number;
+  unit: string;
 }
 
 export interface ForecastStats {

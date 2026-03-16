@@ -14,7 +14,7 @@ function makeSeriesFromDaily(values: number[]): ComparisonSeries {
     current: {
       points,
       unit: "kWh",
-      periodLabel: "Bieżący okres",
+      periodLabel: "Current period",
       total: points[points.length - 1]?.value ?? 0
     },
     aggregation: "day",

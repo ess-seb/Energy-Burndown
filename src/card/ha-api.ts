@@ -84,12 +84,13 @@ export function buildLtsQuery(
 export function mapLtsResponseToSeries(
   response: LtsStatisticsResponse | { result?: LtsStatisticsResponse },
   entityId: string,
-  period: ComparisonPeriod
+  period: ComparisonPeriod,
+  periodLabel: string
 ): ComparisonSeries | undefined {
   const cumulative = mapLtsResponseToCumulativeSeries(
     response,
     entityId,
-    "Bieżący okres"
+    periodLabel
   );
   if (!cumulative) return undefined;
 

@@ -5,6 +5,12 @@
 
 ---
 
+## Rule: No user-visible strings outside translation files
+
+**No user-visible text may appear in source code.** All strings shown to the user must come from `src/translations/*.json` and be accessed via `localize(key)` (or `localize(key, vars)` for templates). This keeps the card translatable and prevents regressions. When adding new UI copy, add a key to `en.json` (and other language files) and use `localize("your.key")` in the code.
+
+---
+
 ## How translations work
 
 All user-visible text lives in `src/translations/<lang>.json`.  

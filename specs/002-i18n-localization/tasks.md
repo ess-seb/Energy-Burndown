@@ -119,11 +119,11 @@ description: "Tasks for feature 002-i18n-localization – Energy Burndown Card"
 
 ### Implementation for User Story 4
 
-- [ ] T029 [P] [US4] Audit `src/card/cumulative-comparison-chart.ts`, `src/card/chart-renderer.ts`, and related card files for any remaining hardcoded UI strings and map each to a descriptive translation key
-- [ ] T030 [US4] Replace remaining hardcoded UI strings in `src/card/cumulative-comparison-chart.ts` with `localize()` calls using descriptive keys and add short inline comments describing each string’s purpose
-- [ ] T031 [US4] Replace any remaining hardcoded UI strings in `src/card/chart-renderer.ts` (e.g., dataset labels) with parameters passed from `cumulative-comparison-chart.ts` that are already localized
-- [ ] T032 [P] [US4] Add a linter-friendly helper or documentation note in `specs/002-i18n-localization/quickstart.md` describing the rule "no user-visible strings outside `src/translations/*.json`" and how to add new keys
-- [ ] T033 [P] [US4] Add a unit or static-analysis style test in `tests/unit/localize-static-text-guard.test.ts` (or similar) that checks for obvious hardcoded Polish phrases to prevent regressions
+- [x] T029 [P] [US4] Audit `src/card/cumulative-comparison-chart.ts`, `src/card/chart-renderer.ts`, and related card files for any remaining hardcoded UI strings and map each to a descriptive translation key
+- [x] T030 [US4] Replace remaining hardcoded UI strings in `src/card/cumulative-comparison-chart.ts` with `localize()` calls using descriptive keys and add short inline comments describing each string’s purpose
+- [x] T031 [US4] Replace any remaining hardcoded UI strings in `src/card/chart-renderer.ts` (e.g., dataset labels) with parameters passed from `cumulative-comparison-chart.ts` that are already localized
+- [x] T032 [P] [US4] Add a linter-friendly helper or documentation note in `specs/002-i18n-localization/quickstart.md` describing the rule "no user-visible strings outside `src/translations/*.json`" and how to add new keys
+- [x] T033 [P] [US4] Add a unit or static-analysis style test in `tests/unit/localize-static-text-guard.test.ts` (or similar) that checks for obvious hardcoded Polish phrases to prevent regressions
 
 **Checkpoint**: User Story 4 complete – rendering code is free from raw user-visible text, and localization keys plus comments make behaviour clear to maintainers.
 

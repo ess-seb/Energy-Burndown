@@ -112,6 +112,7 @@ export class EnergyBurndownCard extends LitElement implements LovelaceCard {
 
     const now = new Date();
     const resolved = resolveLocale(this.hass, this._config);
+    const localize = createLocalize(resolved.language);
     const period = buildComparisonPeriod(this._config, now, resolved.timeZone);
     const currentQuery = buildLtsQuery(period, this._config.entity);
     const referencePeriod: typeof period = {
@@ -174,10 +175,11 @@ export class EnergyBurndownCard extends LitElement implements LovelaceCard {
         }
       }
 
+      // Period label for current series (chart legend); must be localized.
       const current = mapLtsResponseToCumulativeSeries(
         currentResponse as any,
         this._config.entity,
-        "Bieżący okres"
+        localize("period.current")
       );
 
       if (!current) {
@@ -191,10 +193,11 @@ export class EnergyBurndownCard extends LitElement implements LovelaceCard {
         return;
       }
 
+      // Period label for reference series (chart legend); must be localized.
       const reference = mapLtsResponseToCumulativeSeries(
         referenceResponse as any,
         this._config.entity,
-        "Okres referencyjny"
+        localize("period.reference")
       );
 
       const entityUnit =

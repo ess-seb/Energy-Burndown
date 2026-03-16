@@ -12,6 +12,8 @@ import {
 import "chartjs-adapter-date-fns";
 import type { ComparisonSeries } from "./types";
 
+/** Labels must be pre-localized by the card; this module does not use translation files. */
+
 Chart.register(
   LineController,
   LineElement,
@@ -62,6 +64,7 @@ export class ChartRenderer {
     this.chart = undefined;
   }
 
+  /** @param labels - Pre-localized legend labels from the card (e.g. period.current / period.reference). */
   update(
     series: ComparisonSeries,
     labels: { current: string; reference: string }

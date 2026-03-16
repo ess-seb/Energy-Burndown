@@ -92,7 +92,8 @@ describe("mapLtsResponseToSeries", () => {
         reference_end: new Date("2023-01-03T00:00:00Z"),
         aggregation: "day",
         time_zone: "UTC"
-      }
+      },
+      "Current period"
     );
 
     expect(series).toBeDefined();
@@ -130,7 +131,8 @@ describe("mapLtsResponseToSeries", () => {
         reference_end: new Date("2023-01-03T00:00:00Z"),
         aggregation: "day",
         time_zone: "UTC"
-      }
+      },
+      "Current period"
     );
 
     expect(series).toBeUndefined();

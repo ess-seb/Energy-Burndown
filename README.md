@@ -78,6 +78,11 @@ comparison_mode: year_over_year
 | `show_icon`       | boolean  | `true`             | Show/hide the pictogram in the header                                      |
 | `language`        | string   | from HA            | Override dashboard language for this card only (e.g. `en`, `pl`, `de`)     |
 | `number_format`   | string   | from HA            | Override number format: `comma`, `decimal`, `language`, or `system`         |
+| `primary_color`   | string   | accent color HA    | CSS color value for current series line, fill, and markers (e.g. `#E53935`). Fallback: `--accent-color` HA → `--primary-color` HA → `#03a9f4` |
+| `fill_current`    | boolean  | `true`             | Show semi-transparent fill under the current series line                   |
+| `fill_reference`  | boolean  | `false`            | Show semi-transparent fill under the reference series line                 |
+| `fill_current_opacity` | number | `30`              | Opacity of current series fill (0–100)                                     |
+| `fill_reference_opacity` | number | `30`             | Opacity of reference series fill (0–100)                                   |
 | `debug`           | boolean  | `false`            | Log API query/response to browser console (F12) for troubleshooting        |
 
 ### Example configurations
@@ -124,6 +129,22 @@ entity: sensor.energy_consumption_total
 comparison_mode: year_over_year
 language: pl
 number_format: comma
+```
+
+**Chart customization (colors, fill, forecast):**
+```yaml
+type: custom:energy-horizon-card
+entity: sensor.energy_consumption_total
+comparison_mode: year_over_year
+aggregation: day
+
+# Chart appearance
+primary_color: "#E53935"       # Red color for current series
+fill_current: true             # Show fill under current series (default: true)
+fill_current_opacity: 20       # Adjust transparency (0–100, default: 30)
+fill_reference: true           # Show fill under reference series (default: false)
+fill_reference_opacity: 15     # Reference series transparency (0–100, default: 30)
+show_forecast: true            # Show forecast line (default: true)
 ```
 
 ## Supported entities

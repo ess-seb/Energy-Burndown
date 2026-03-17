@@ -56,7 +56,7 @@ export const energyHorizonCardStyles = css`
 
   .chart-container {
     position: relative;
-    height: 200px;
+    height: 290px;
   }
 
   .ebc-title-row {

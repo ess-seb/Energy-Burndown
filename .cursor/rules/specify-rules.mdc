@@ -11,6 +11,8 @@ Auto-generated from all feature plans. Last updated: 2026-03-10
 ## Active Technologies
 - TypeScript 5 (strict mode) + LitElement 4, Vite (bundler), Chart.js (002-i18n-localization)
 - N/A – translations bundled statically at build time (Vite JSON import) (002-i18n-localization)
+- TypeScript 5.6 (ES2020+, strict mode) + Lit 3.1 (LitElement, `html` tagged template), Chart.js, Vite 6 (bundler), Vitest 2 (tests) (001-card-ui-enhancements)
+- N/A — all processing is in-browser; HA state is read-only at render time (001-card-ui-enhancements)
 
 - TypeScript (ES2020+, `strict` enabled) + Lit (`lit`, `lit/decorators.js`), Chart.js (core + line/tooltip/legend/gradient plugins), Home Assistant Lovelace card API typings, Vite bundler (001-energy-horizon-card)
 
@@ -31,6 +33,7 @@ npm test && npm run lint
 TypeScript (ES2020+, `strict` enabled): Follow standard conventions
 
 ## Recent Changes
+- 001-card-ui-enhancements: Added TypeScript 5.6 (ES2020+, strict mode) + Lit 3.1 (LitElement, `html` tagged template), Chart.js, Vite 6 (bundler), Vitest 2 (tests)
 - 002-i18n-localization: Added TypeScript 5 (strict mode) + LitElement 4, Vite (bundler), Chart.js
 
 - 001-energy-horizon-card: Added TypeScript (ES2020+, `strict` enabled) + Lit (`lit`, `lit/decorators.js`), Chart.js (core + line/tooltip/legend/gradient plugins), Home Assistant Lovelace card API typings, Vite bundler

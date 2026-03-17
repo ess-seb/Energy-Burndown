@@ -10,7 +10,7 @@ import {
   Filler
 } from "chart.js";
 import "chartjs-adapter-date-fns";
-import type { ComparisonSeries, ChartRendererConfig } from "./types";
+import type { ComparisonSeries, ChartRendererConfig, TimeSeriesPoint } from "./types";
 
 /** Labels must be pre-localized by the card; this module does not use translation files. */
 
@@ -71,6 +71,53 @@ export class ChartRenderer {
     this.chart = undefined;
   }
 
+  private alignSeriesOnTimeline(
+    points: TimeSeriesPoint[],
+    timeline: number[],
+    referenceStart?: Date
+  ): (number | null)[] {
+    const result: (number | null)[] = new Array(timeline.length).fill(null);
+
+    if (timeline.length === 0) {
+      return result;
+    }
+
+    const slotDuration = timeline.length > 1 ? timeline[1] - timeline[0] : 86400000;
+
+    for (let i = 0; i < timeline.length; i++) {
+      const slotStart = timeline[i];
+      const slotEnd = timeline[i + 1] ?? slotStart + slotDuration;
+
+      let matchedValue: number | null = null;
+
+      if (referenceStart === undefined) {
+        // Current series: match points within the current slot
+        for (const point of points) {
+          if (point.timestamp >= slotStart && point.timestamp < slotEnd) {
+            matchedValue = point.value;
+            break;
+          }
+        }
+      } else {
+        // Reference series: compute expected timestamp based on offset
+        const expectedTs = referenceStart.getTime() + (slotStart - timeline[0]);
+        for (const point of points) {
+          if (
+            point.timestamp >= expectedTs &&
+            point.timestamp < expectedTs + slotDuration
+          ) {
+            matchedValue = point.value;
+            break;
+          }
+        }
+      }
+
+      result[i] = matchedValue;
+    }
+
+    return result;
+  }
+
   /** @param labels - Pre-localized legend labels from the card (e.g. period.current / period.reference). */
   update(
     series: ComparisonSeries,
@@ -78,21 +125,25 @@ export class ChartRenderer {
     rendererConfig: ChartRendererConfig,
     labels: { current: string; reference: string }
   ): void {
-    // TODO: implement in Phase 3
     const ctx = this.canvas.getContext("2d");
     if (!ctx) return;
 
-    const currentData = series.current.points.map((p, index) => ({
-      x: index + 1,
-      y: p.value
-    }));
+    const currentValues = this.alignSeriesOnTimeline(
+      series.current.points,
+      fullTimeline
+    );
 
-    const referenceData = series.reference
-      ? series.reference.points.map((p, index) => ({
-          x: index + 1,
-          y: p.value
-        }))
-      : [];
+    const referenceValues = series.reference
+      ? this.alignSeriesOnTimeline(
+          series.reference.points,
+          fullTimeline,
+          undefined
+        )
+      : new Array(fullTimeline.length).fill(null);
+
+    const currentData = currentValues.map((y, i) => ({ x: i, y } as ChartPoint));
+
+    const referenceData = referenceValues.map((y, i) => ({ x: i, y } as ChartPoint));
 
     const hash = JSON.stringify({
       c: currentData,
@@ -116,7 +167,8 @@ export class ChartRenderer {
           backgroundColor: "transparent",
           fill: false,
           pointRadius: 0,
-          tension: 0.3
+          tension: 0.3,
+          spanGaps: false
         },
         ...(series.reference
           ? [
@@ -127,7 +179,8 @@ export class ChartRenderer {
                 backgroundColor: "transparent",
                 pointRadius: 0,
                 borderDash: [4, 2],
-                tension: 0.3
+                tension: 0.3,
+                spanGaps: false
               }
             ]
           : [])

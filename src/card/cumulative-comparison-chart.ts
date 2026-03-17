@@ -1,13 +1,14 @@
 import { LitElement, html } from "lit";
 import type { HomeAssistant, LovelaceCard } from "../ha-types";
-import type { CardConfig, CardState, ComparisonSeries } from "./types";
+import type { CardConfig, CardState, ComparisonSeries, ChartRendererConfig, ComparisonPeriod } from "./types";
 import {
   buildComparisonPeriod,
   buildLtsQuery,
   mapLtsResponseToCumulativeSeries,
   computeSummary,
   computeForecast,
-  computeTextSummary
+  computeTextSummary,
+  buildFullTimeline
 } from "./ha-api";
 import { ChartRenderer } from "./chart-renderer";
 import {
@@ -40,6 +41,14 @@ export function buildPeriodSuffix(date: Date, mode: string, language: string): s
     return new Intl.DateTimeFormat(language, { month: "long", year: "numeric" }).format(date);
   }
   return "";
+}
+
+function clampOpacity(value: unknown): number {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0 || n > 100) {
+    return 30;
+  }
+  return n;
 }
 
 export class EnergyHorizonCard extends LitElement implements LovelaceCard {
@@ -119,20 +128,13 @@ export class EnergyHorizonCard extends LitElement implements LovelaceCard {
           }
         }
 
-        if (this._chartRenderer) {
+        if (this._chartRenderer && this._state.period) {
           const resolved = resolveLocale(this.hass, this._config);
           const localize = createLocalize(resolved.language);
-          this._chartRenderer.update(this._state.comparisonSeries, [], {
-            primaryColor: "",
-            fillCurrent: true,
-            fillReference: false,
-            fillCurrentOpacity: 30,
-            fillReferenceOpacity: 30,
-            showForecast: false,
-            forecastTotal: undefined,
-            unit: "",
-            periodLabel: ""
-          }, {
+          const fullEnd = this._computeFullEnd(this._state.period);
+          const fullTimeline = buildFullTimeline(this._state.period, fullEnd);
+          const rendererConfig = this._buildRendererConfig();
+          this._chartRenderer.update(this._state.comparisonSeries, fullTimeline, rendererConfig, {
             current: this._localizeOrError(localize, "period.current"),
             reference: this._localizeOrError(localize, "period.reference")
           });
@@ -278,6 +280,56 @@ export class EnergyHorizonCard extends LitElement implements LovelaceCard {
         errorMessage: "status.error_api"
       };
     }
+  }
+
+  private _computeFullEnd(period: ComparisonPeriod): Date {
+    if (this._config.comparison_mode === "year_over_year") {
+      return new Date(period.current_start.getFullYear(), 11, 31);
+    } else {
+      // month_over_year
+      return new Date(period.current_start.getFullYear(), period.current_start.getMonth() + 1, 0);
+    }
+  }
+
+  private _buildRendererConfig(): ChartRendererConfig {
+    if (!this._state.period) {
+      return {
+        primaryColor: this._config.primary_color || "#03a9f4",
+        fillCurrent: this._config.fill_current ?? true,
+        fillReference: this._config.fill_reference ?? false,
+        fillCurrentOpacity: clampOpacity(this._config.fill_current_opacity),
+        fillReferenceOpacity: clampOpacity(this._config.fill_reference_opacity),
+        showForecast: this._config.show_forecast ?? false,
+        forecastTotal: this._state.forecast?.forecast_total,
+        unit: this._state.forecast?.unit ?? "",
+        periodLabel: ""
+      };
+    }
+
+    const period = this._state.period;
+    const lang = this._config.language ?? this.hass?.language ?? "en";
+
+    let periodLabel = "";
+    if (this._config.comparison_mode === "year_over_year") {
+      periodLabel = String(period.current_start.getFullYear());
+    } else {
+      periodLabel = new Intl.DateTimeFormat(lang, { month: "long" }).format(period.current_start);
+    }
+
+    const entityState = this.hass?.states?.[this._config.entity];
+    const unit = (entityState?.attributes as { unit_of_measurement?: string })?.unit_of_measurement ?? "";
+
+    return {
+      primaryColor: this._config.primary_color || "#03a9f4",
+      fillCurrent: this._config.fill_current ?? true,
+      fillReference: this._config.fill_reference ?? false,
+      fillCurrentOpacity: clampOpacity(this._config.fill_current_opacity),
+      fillReferenceOpacity: clampOpacity(this._config.fill_reference_opacity),
+      showForecast: this._config.show_forecast ?? false,
+      forecastTotal: this._state.forecast?.forecast_total,
+      unit,
+      periodLabel
+    };
   }
 
   protected render() {

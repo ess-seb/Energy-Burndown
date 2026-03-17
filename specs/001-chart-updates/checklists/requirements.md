@@ -31,4 +31,4 @@
 
 ## Notes
 
-All checklist items passed on first validation iteration. Specification is ready for `/speckit.clarify` or `/speckit.plan`.
+All checklist items passed after update adding independent fill opacity controls (`fill_current_opacity`, `fill_reference_opacity`). Specification is ready for `/speckit.clarify` or `/speckit.plan`.

@@ -36,16 +36,16 @@ Użytkownik patrzy na wykres i chce natychmiast rozpoznać, który punkt odpowia
 
 **Acceptance Scenarios**:
 
-1. **Given** karta z danymi dla bieżącego i referencyjnego okresu, **When** wykres jest renderowany, **Then** na serii bieżącego okresu widoczna jest wyraźna kropka w punkcie odpowiadającym dzisiejszemu dniu.
-2. **Given** j.w., **When** wykres jest renderowany, **Then** na serii referencyjnej widoczna jest wyraźna kropka w punkcie odpowiadającym analogicznemu dniu okresu referencyjnego.
+1. **Given** karta z danymi dla bieżącego i referencyjnego okresu, **When** wykres jest renderowany, **Then** na serii bieżącego okresu widoczna jest wyraźna kropka w punkcie odpowiadającym dzisiejszemu dniu, w kolorze przypisanym do serii okresu biezacego.
+2. **Given** j.w., **When** wykres jest renderowany, **Then** na serii referencyjnej widoczna jest wyraźna kropka w punkcie odpowiadającym analogicznemu dniu okresu referencyjnego, w kolorze przypisanym do serii okresu referencyjnego.
 3. **Given** obie serie mają kropki, **When** wykres jest renderowany, **Then** pionowa linia przerywana jest rysowana od wartości 0 na osi pionowej do wyższej z dwóch wartości (punkt bieżący lub referencyjny), w kolorze linii serii bieżącego okresu.
-4. **Given** brak danych dla dzisiejszego dnia w jednej z serii, **When** wykres jest renderowany, **Then** kropka tej serii nie jest wyświetlana, a linia przerywana wyznacza pozycję dzisiejszego dnia na osi poziomej opierając się na dostępnej serii.
+4. **Given** brak danych dla dzisiejszego dnia w jednej z serii, **When** wykres jest renderowany, **Then** kropka tej serii nie jest wyświetlana, a linia przerywana wyznacza pozycję dzisiejszego dnia na osi poziomej opierając się na dostępnej serii. Jeśli zadna seria nie jest dostępna linia pionowa biegnie do samej góry wykresu. 
 
 ---
 
 ### User Story 3 – Półprzezroczyste wypełnienie pod liniami wykresu (Priority: P3)
 
-Użytkownik chce, by kumulatywny charakter danych był wizualnie podkreślony przez wypełnienie obszaru pod liniami wykresu. Wypełnienie ma kolor odpowiedniej serii z kryciem 30%. Widoczność wypełnienia dla każdej serii jest niezależnie kontrolowana flagą logiczną w konfiguracji YAML. Domyślnie: wypełnienie dla serii bieżącego okresu jest włączone, dla serii referencyjnej wyłączone.
+Użytkownik chce, by kumulatywny charakter danych był wizualnie podkreślony przez wypełnienie obszaru pod liniami wykresu. Wypełnienie ma kolor odpowiedniej serii. Użytkownik może niezależnie dla każdej serii (bieżącej i referencyjnej) włączyć/wyłączyć wypełnienie oraz ustawić jego krycie w YAML. Jeśli krycie nie jest zdefiniowane, przyjmuje domyślną wartość 30%. Domyślnie: wypełnienie dla serii bieżącego okresu jest włączone, dla serii referencyjnej wyłączone.
 
 **Why this priority**: Wypełnienie jest elementem estetycznym i pomocniczym. Ma niższy priorytet niż poprawność osi i nawigacja po dacie bieżącej.
 
@@ -53,10 +53,13 @@ Użytkownik chce, by kumulatywny charakter danych był wizualnie podkreślony pr
 
 **Acceptance Scenarios**:
 
-1. **Given** brak jawnej konfiguracji flag wypełnienia, **When** wykres jest renderowany, **Then** wypełnienie pod serią bieżącego okresu jest widoczne z kryciem 30%, wypełnienie pod serią referencyjną jest niewidoczne.
+1. **Given** brak jawnej konfiguracji flag wypełnienia i wartości krycia wypełnienia, **When** wykres jest renderowany, **Then** wypełnienie pod serią bieżącego okresu jest widoczne z kryciem 30%, wypełnienie pod serią referencyjną jest niewidoczne.
 2. **Given** `fill_reference: true` w YAML, **When** wykres jest renderowany, **Then** wypełnienie pod serią referencyjną jest widoczne z kryciem 30% w kolorze serii referencyjnej.
 3. **Given** `fill_current: false` w YAML, **When** wykres jest renderowany, **Then** wypełnienie pod serią bieżącego okresu jest niewidoczne.
 4. **Given** dowolna kombinacja flag, **When** kolor serii zostanie zmieniony (US4), **Then** wypełnienie zachowuje kolor powiązanej serii.
+5. **Given** `fill_current_opacity: 10` w YAML, **When** wykres jest renderowany, **Then** wypełnienie pod serią bieżącego okresu ma krycie 10% i nie wpływa na krycie samej linii serii.
+6. **Given** `fill_reference: true` oraz `fill_reference_opacity: 60` w YAML, **When** wykres jest renderowany, **Then** wypełnienie pod serią referencyjną ma krycie 60%.
+7. **Given** niepoprawna wartość krycia (np. ujemna lub powyżej 100), **When** wykres jest renderowany, **Then** karta stosuje wartość domyślną 30% dla tej serii i nie przerywa renderowania karty.
 
 ---
 
@@ -131,7 +134,7 @@ Użytkownik chce ogólnych ulepszeń wyglądu wykresu: ograniczenia liczby linii
 - Co jeśli badany okres to rok przestępny (366 dni)? → Oś pozioma musi mieć 366 pozycji.
 - Co jeśli brakuje danych dla całego okresu jednej z serii? → Seria nie jest rysowana, oś pozioma pozostaje kompletna.
 - Co jeśli dzisiejszy dzień wypada poza badanym okresem? → Kropki aktualnego dnia i pionowa linia przerywana nie są wyświetlane; linia prognozy nie jest wyświetlana.
-- Co jeśli `primary_color` to wartość `rgba(...)` z własną przezroczystością? → Wypełnienie pod wykresem nakłada swoje 30% krycia na podany kolor.
+- Co jeśli `primary_color` to wartość `rgba(...)` z własną przezroczystością? → Wypełnienie pod wykresem stosuje skonfigurowane krycie wypełnienia (domyślnie 30%) niezależnie od wartości `primary_color`.
 - Co jeśli encja zmienia jednostkę w czasie? → Etykieta osi pionowej wyświetla aktualną jednostkę encji.
 - Co jeśli okres to jeden dzień? → Oś pozioma wyświetla jedną pozycję; prognoza jest punktem.
 - Co jeśli agregacja to `week` i okres to miesiąc (niepełne tygodnie)? → Oś pozioma wyświetla wszystkie tygodnie, w tym tygodnie częściowe z przełomu okresu.
@@ -156,9 +159,13 @@ Użytkownik chce ogólnych ulepszeń wyglądu wykresu: ograniczenia liczby linii
 
 **US3 – Wypełnienie pod wykresem:**
 
-- **FR-007**: Pod linią każdej serii danych MUSI być dostępne półprzezroczyste wypełnienie w kolorze danej serii z kryciem 30%.
+- **FR-007**: Pod linią każdej serii danych MUSI być dostępne półprzezroczyste wypełnienie w kolorze danej serii z konfigurowalnym kryciem; jeśli krycie nie jest skonfigurowane, MUSI wynosić 30%.
 - **FR-008**: Widoczność wypełnienia dla serii bieżącego okresu MUSI być kontrolowana flagą logiczną `fill_current` w YAML (domyślnie: `true`).
 - **FR-009**: Widoczność wypełnienia dla serii referencyjnej MUSI być kontrolowana flagą logiczną `fill_reference` w YAML (domyślnie: `false`).
+- **FR-009a**: Krycie wypełnienia dla serii bieżącego okresu MUSI być konfigurowalne opcją `fill_current_opacity` w YAML (wartość w % w zakresie 0–100; domyślnie: 30).
+- **FR-009b**: Krycie wypełnienia dla serii referencyjnej MUSI być konfigurowalne opcją `fill_reference_opacity` w YAML (wartość w % w zakresie 0–100; domyślnie: 30).
+- **FR-009c**: Zmiana krycia wypełnienia MUSI wpływać wyłącznie na wypełnienie (nie na krycie linii serii ani innych elementów wykresu).
+- **FR-009d**: W przypadku wartości krycia spoza zakresu 0–100 karta MUSI zastosować fallback 30% dla danej serii i kontynuować renderowanie.
 
 **US4 – Kolor głównej serii:**
 
@@ -186,7 +193,7 @@ Użytkownik chce ogólnych ulepszeń wyglądu wykresu: ograniczenia liczby linii
 
 **Aktualizacja dokumentacji:**
 
-- **FR-022**: Plik README MUSI zostać zaktualizowany o opisy wszystkich nowych opcji konfiguracyjnych (`fill_current`, `fill_reference`, `primary_color`, `show_forecast`) wraz z ich domyślnymi wartościami.
+- **FR-022**: Plik README MUSI zostać zaktualizowany o opisy wszystkich nowych opcji konfiguracyjnych (`fill_current`, `fill_reference`, `fill_current_opacity`, `fill_reference_opacity`, `primary_color`, `show_forecast`) wraz z ich domyślnymi wartościami.
 - **FR-023**: Istniejące sekcje dokumentacji dotyczące wyglądu wykresu MUSZĄ zostać zaktualizowane, by odzwierciedlać nowe zachowania (pełna oś, wypełnienia, linie siatki, wysokość).
 
 ---
@@ -198,9 +205,9 @@ Użytkownik chce ogólnych ulepszeń wyglądu wykresu: ograniczenia liczby linii
 - **SC-001**: Oś pozioma wykresu zawsze wyświetla kompletny zestaw jednostek czasu dla badanego okresu — 0 brakujących pozycji na osi niezależnie od dostępności danych.
 - **SC-002**: Użytkownik jest w stanie zlokalizować aktualny dzień na wykresie w czasie poniżej 3 sekund bez konieczności najechania kursorem ani interakcji z legendą.
 - **SC-003**: Zmiana koloru serii bieżącego okresu przez opcję `primary_color` jest natychmiast widoczna po przeładowaniu karty — wszystkie powiązane elementy wizualne (linia, wypełnienie, kropka, linia przerywana, prognoza) stosują podany kolor.
-- **SC-004**: Każda z flag konfiguracyjnych (`fill_current`, `fill_reference`, `show_forecast`) działa niezależnie — zmiana jednej nie wpływa na stan pozostałych.
+- **SC-004**: Każda z opcji konfiguracyjnych związanych z wypełnieniem (`fill_current`, `fill_reference`, `fill_current_opacity`, `fill_reference_opacity`) działa niezależnie — zmiana jednej nie wpływa na stan pozostałych.
 - **SC-005**: Wykres renderuje się poprawnie (bez błędów JS, bez pustej karty) dla wszystkich kombinacji nowych opcji konfiguracyjnych.
-- **SC-006**: Dokumentacja README zawiera opis wszystkich 4 nowych opcji YAML z przykładowymi wartościami i wyjaśnieniem domyślnych zachowań.
+- **SC-006**: Dokumentacja README zawiera opis wszystkich nowych opcji YAML z przykładowymi wartościami i wyjaśnieniem domyślnych zachowań.
 
 ---
 

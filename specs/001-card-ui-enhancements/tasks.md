@@ -15,10 +15,10 @@
 
 **Purpose**: Verify working baseline before any changes are made.
 
-- [ ] T001 Verify `git checkout 001-card-ui-enhancements` (or create branch from main)
-- [ ] T002 [P] Confirm `npm install` passes without errors in the repository root
-- [ ] T003 [P] Confirm `npm test` passes (green baseline) before any edits
-- [ ] T004 [P] Confirm `npm run build` produces `dist/energy-horizon-card.js` without errors
+- [x] T001 Verify `git checkout 001-card-ui-enhancements` (or create branch from main)
+- [x] T002 [P] Confirm `npm install` passes without errors in the repository root
+- [x] T003 [P] Confirm `npm test` passes (green baseline) before any edits
+- [x] T004 [P] Confirm `npm run build` produces `dist/energy-horizon-card.js` without errors
 
 ---
 

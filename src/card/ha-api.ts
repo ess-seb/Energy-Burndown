@@ -14,6 +14,39 @@ import type {
 
 const MIN_POINTS_FOR_FORECAST = 5;
 
+export function buildFullTimeline(
+  period: ComparisonPeriod,
+  fullEnd: Date
+): number[] {
+  const timeline: number[] = [];
+  const cursor = new Date(period.current_start);
+  cursor.setHours(0, 0, 0, 0);
+
+  if (period.aggregation === "day") {
+    while (cursor.getTime() <= fullEnd.getTime()) {
+      timeline.push(cursor.getTime());
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  } else if (period.aggregation === "week") {
+    while (cursor.getTime() <= fullEnd.getTime()) {
+      timeline.push(cursor.getTime());
+      cursor.setDate(cursor.getDate() + 7);
+    }
+  } else if (period.aggregation === "month") {
+    cursor.setDate(1);
+    while (
+      cursor.getFullYear() < fullEnd.getFullYear() ||
+      (cursor.getFullYear() === fullEnd.getFullYear() &&
+        cursor.getMonth() <= fullEnd.getMonth())
+    ) {
+      timeline.push(cursor.getTime());
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+  }
+
+  return timeline;
+}
+
 export function buildComparisonPeriod(
   config: CardConfig,
   now: Date,

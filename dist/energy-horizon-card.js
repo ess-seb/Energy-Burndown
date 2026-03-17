@@ -11216,7 +11216,7 @@ class fg {
     ), a = t.reference ? this.alignSeriesOnTimeline(
       t.reference.points,
       e,
-      void 0
+      i.referencePeriodStart != null ? new Date(i.referencePeriodStart) : void 0
     ) : new Array(e.length).fill(null), c = /* @__PURE__ */ new Date();
     c.setHours(0, 0, 0, 0);
     const l = c.getTime();
@@ -11251,7 +11251,7 @@ class fg {
           const w = b.scales.y.getPixelForValue(
             g._todayCurrentY
           );
-          _.fillStyle = f.currentLine, _.beginPath(), _.arc(v, w, k, 0, 2 * Math.PI), _.fill();
+          _.fillStyle = g._primaryColorResolved, _.beginPath(), _.arc(v, w, k, 0, 2 * Math.PI), _.fill();
         }
         if (g._todayReferenceY !== void 0) {
           const w = b.scales.y.getPixelForValue(
@@ -11330,6 +11330,8 @@ class fg {
       scales: {
         x: {
           type: "linear",
+          min: 0,
+          max: e.length,
           ticks: {
             precision: 0,
             display: !0
@@ -11713,7 +11715,7 @@ const En = class En extends Te {
     var o, a, c, l, h, u, d;
     if (!this._state.period)
       return {
-        primaryColor: this._config.primary_color || "#03a9f4",
+        primaryColor: this._config.primary_color ?? "",
         fillCurrent: this._config.fill_current ?? !0,
         fillReference: this._config.fill_reference ?? !1,
         fillCurrentOpacity: mn(this._config.fill_current_opacity),
@@ -11728,7 +11730,7 @@ const En = class En extends Te {
     this._config.comparison_mode === "year_over_year" ? i = String(t.current_start.getFullYear()) : i = new Intl.DateTimeFormat(e, { month: "long" }).format(t.current_start);
     const s = (h = (l = this.hass) == null ? void 0 : l.states) == null ? void 0 : h[this._config.entity], r = ((u = s == null ? void 0 : s.attributes) == null ? void 0 : u.unit_of_measurement) ?? "";
     return {
-      primaryColor: this._config.primary_color || "#03a9f4",
+      primaryColor: this._config.primary_color ?? "",
       fillCurrent: this._config.fill_current ?? !0,
       fillReference: this._config.fill_reference ?? !1,
       fillCurrentOpacity: mn(this._config.fill_current_opacity),
@@ -11736,7 +11738,8 @@ const En = class En extends Te {
       showForecast: this._config.show_forecast ?? !1,
       forecastTotal: (d = this._state.forecast) == null ? void 0 : d.forecast_total,
       unit: r,
-      periodLabel: i
+      periodLabel: i,
+      referencePeriodStart: t.reference_start.getTime()
     };
   }
   render() {

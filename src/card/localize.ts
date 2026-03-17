@@ -92,7 +92,7 @@ export function resolveLocale(
         ? configLanguage
         : (() => {
             if (config.debug) {
-              // eslint-disable-next-line no-console
+               
               console.warn(
                 `[Energy Horizon] Unsupported config.language "${configLanguage}", falling back to "${FALLBACK_LANGUAGE}"`
               );
@@ -110,7 +110,7 @@ export function resolveLocale(
         ? configNumberFormat
         : (() => {
             if (config.debug) {
-              // eslint-disable-next-line no-console
+               
               console.warn(
                 `[Energy Horizon] Invalid config.number_format "${String(configNumberFormat)}", falling back to "system"`
               );

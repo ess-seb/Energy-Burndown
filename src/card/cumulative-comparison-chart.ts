@@ -66,7 +66,7 @@ export class EnergyHorizonCard extends LitElement implements LovelaceCard {
 
     if (translated === key) {
       if (this._config?.debug) {
-        // eslint-disable-next-line no-console
+         
         console.warn(
           `[Energy Horizon] Missing translation key: "${key}" (language: "${resolveLocale(
             this.hass,
@@ -148,7 +148,7 @@ export class EnergyHorizonCard extends LitElement implements LovelaceCard {
 
     try {
       if (this._config.debug) {
-        // eslint-disable-next-line no-console
+         
         console.log("[Energy Horizon] API Query (current):", currentQuery);
         console.log("[Energy Horizon] API Query (reference):", referenceQuery);
       }
@@ -169,30 +169,30 @@ export class EnergyHorizonCard extends LitElement implements LovelaceCard {
         const results =
           (data as { results?: Record<string, unknown> }).results ??
           (data as Record<string, unknown>);
-        // eslint-disable-next-line no-console
+         
         console.log("[Energy Horizon] API Response (current, raw):", currentResponse);
         if (results && typeof results === "object") {
           const keys = Object.keys(results);
-          // eslint-disable-next-line no-console
+           
           console.log(
             "[Energy Horizon] Results keys (available statistic_ids):",
             keys
           );
           const entityData = results[this._config.entity];
-          // eslint-disable-next-line no-console
+           
           console.log(
             `[Energy Horizon] Data for entity "${this._config.entity}":`,
             entityData
               ? `${Array.isArray(entityData) ? entityData.length : 0} points`
               : "not found"
           );
-          // eslint-disable-next-line no-console
+           
           console.log(
             "[Energy Horizon] Reference API Response (raw):",
             referenceResponse
           );
         } else {
-          // eslint-disable-next-line no-console
+           
           console.log(
             "[Energy Horizon] No results in response or invalid structure"
           );
@@ -208,7 +208,7 @@ export class EnergyHorizonCard extends LitElement implements LovelaceCard {
 
       if (!current) {
         if (this._config.debug) {
-          // eslint-disable-next-line no-console
+           
           console.log(
             "[Energy Horizon] current series could not be built – check entity ID and results structure above"
           );
@@ -261,7 +261,7 @@ export class EnergyHorizonCard extends LitElement implements LovelaceCard {
         period
       };
     } catch (e) {
-      // eslint-disable-next-line no-console
+       
       console.error(e);
       this._state = {
         status: "error",

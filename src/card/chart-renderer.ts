@@ -26,12 +26,15 @@ Chart.register(
 );
 
 // Internal type used in Phase 3 for chart data points
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 type ChartPoint = { x: number; y: number | null };
 
 export class ChartRenderer {
   private chart?: Chart;
   private lastHash?: string;
+  private _todaySlotIndex: number = -1;
+  private _todayCurrentY: number | undefined;
+  private _todayReferenceY: number | undefined;
+  private _primaryColorResolved: string = "#03a9f4";
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -69,6 +72,35 @@ export class ChartRenderer {
   destroy(): void {
     this.chart?.destroy();
     this.chart = undefined;
+  }
+
+  // T016: Convert CSS color to RGBA with specific opacity
+  private colorWithOpacity(cssColor: string, alpha: number): string {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return "transparent";
+    ctx.fillStyle = cssColor;
+    ctx.fillRect(0, 0, 1, 1);
+    const imageData = ctx.getImageData(0, 0, 1, 1);
+    const [r, g, b] = imageData.data;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  // Helper to resolve primary color (used in later phases)
+  private resolveColor(primaryColorConfig: string): string {
+    if (primaryColorConfig.trim()) return primaryColorConfig;
+    const host =
+      (this.canvas.closest(".ehc-card") as HTMLElement | null) ??
+      (this.canvas.closest("ha-card") as HTMLElement | null) ??
+      this.canvas;
+    const styles = getComputedStyle(host);
+    const accentColor = styles.getPropertyValue("--accent-color").trim();
+    if (accentColor) return accentColor;
+    const primaryColor = styles.getPropertyValue("--primary-color").trim();
+    if (primaryColor) return primaryColor;
+    return "#03a9f4";
   }
 
   private alignSeriesOnTimeline(
@@ -141,6 +173,20 @@ export class ChartRenderer {
         )
       : new Array(fullTimeline.length).fill(null);
 
+    // Compute today's slot index and Y values for today marker (T014)
+    const todayMs = new Date();
+    todayMs.setHours(0, 0, 0, 0);
+    const ts = todayMs.getTime();
+    this._todaySlotIndex = fullTimeline.indexOf(ts);
+    this._todayCurrentY =
+      this._todaySlotIndex >= 0
+        ? currentValues[this._todaySlotIndex] ?? undefined
+        : undefined;
+    this._todayReferenceY =
+      this._todaySlotIndex >= 0
+        ? referenceValues[this._todaySlotIndex] ?? undefined
+        : undefined;
+
     const currentData = currentValues.map((y, i) => ({ x: i, y } as ChartPoint));
 
     const referenceData = referenceValues.map((y, i) => ({ x: i, y } as ChartPoint));
@@ -158,14 +204,88 @@ export class ChartRenderer {
 
     const theme = this.getThemeColors();
 
+    // T019: Resolve primary color from config or theme (must come before datasets)
+    this._primaryColorResolved = this.resolveColor(rendererConfig.primaryColor);
+
+    // T015: Today marker plugin
+    const self = this;
+    const todayMarkerPlugin = {
+      id: "todayMarker",
+      afterDraw(chart: Chart) {
+        if (self._todaySlotIndex < 0) return;
+
+        const xPixel = chart.scales["x"].getPixelForValue(self._todaySlotIndex);
+        const y0 = chart.scales["y"].getPixelForValue(0);
+        const ctx = chart.ctx;
+
+        // Determine the highest Y pixel to draw the dashed line
+        let yTop: number;
+        if (
+          self._todayCurrentY !== undefined &&
+          self._todayReferenceY !== undefined
+        ) {
+          const currentPixel = chart.scales["y"].getPixelForValue(
+            self._todayCurrentY
+          );
+          const referencePixel = chart.scales["y"].getPixelForValue(
+            self._todayReferenceY
+          );
+          yTop = Math.min(currentPixel, referencePixel);
+        } else if (self._todayCurrentY !== undefined) {
+          yTop = chart.scales["y"].getPixelForValue(self._todayCurrentY);
+        } else if (self._todayReferenceY !== undefined) {
+          yTop = chart.scales["y"].getPixelForValue(self._todayReferenceY);
+        } else {
+          yTop = chart.chartArea.top;
+        }
+
+        // Draw dashed vertical line
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = self._primaryColorResolved;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(xPixel, y0);
+        ctx.lineTo(xPixel, yTop);
+        ctx.stroke();
+        ctx.restore();
+
+        // Draw filled circles at today's values
+        const circleRadius = 5;
+        if (self._todayCurrentY !== undefined) {
+          const yPixel = chart.scales["y"].getPixelForValue(
+            self._todayCurrentY
+          );
+          ctx.fillStyle = theme.currentLine;
+          ctx.beginPath();
+          ctx.arc(xPixel, yPixel, circleRadius, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+        if (self._todayReferenceY !== undefined) {
+          const yPixel = chart.scales["y"].getPixelForValue(
+            self._todayReferenceY
+          );
+          ctx.fillStyle = theme.referenceLine;
+          ctx.beginPath();
+          ctx.arc(xPixel, yPixel, circleRadius, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+      }
+    };
+
     const data = {
       datasets: [
         {
           label: labels.current,
           data: currentData,
-          borderColor: theme.currentLine,
-          backgroundColor: "transparent",
-          fill: false,
+          borderColor: this._primaryColorResolved,
+          backgroundColor: rendererConfig.fillCurrent
+            ? this.colorWithOpacity(
+                this._primaryColorResolved,
+                rendererConfig.fillCurrentOpacity / 100
+              )
+            : "transparent",
+          fill: rendererConfig.fillCurrent ? "origin" : false,
           pointRadius: 0,
           tension: 0.3,
           spanGaps: false
@@ -176,14 +296,46 @@ export class ChartRenderer {
                 label: labels.reference,
                 data: referenceData,
                 borderColor: theme.referenceLine,
-                backgroundColor: "transparent",
+                backgroundColor: rendererConfig.fillReference
+                  ? this.colorWithOpacity(
+                      theme.referenceLine,
+                      rendererConfig.fillReferenceOpacity / 100
+                    )
+                  : "transparent",
+                fill: rendererConfig.fillReference ? "origin" : false,
                 pointRadius: 0,
                 borderDash: [4, 2],
                 tension: 0.3,
                 spanGaps: false
               }
             ]
-          : [])
+          : []),
+        // T020: Forecast dataset
+        ...(rendererConfig.showForecast &&
+        this._todaySlotIndex >= 0 &&
+        this._todayCurrentY !== undefined &&
+        rendererConfig.forecastTotal !== undefined
+          ? [
+              {
+                label: "Forecast",
+                data: [
+                  { x: this._todaySlotIndex, y: this._todayCurrentY },
+                  { x: fullTimeline.length - 1, y: rendererConfig.forecastTotal }
+                ] as ChartPoint[],
+                borderColor: this._primaryColorResolved,
+                borderDash: [6, 3],
+                pointRadius: 0,
+                fill: false,
+                spanGaps: true,
+                tension: 0
+              }
+            ]
+          : [
+              {
+                label: "Forecast",
+                data: [] as ChartPoint[]
+              }
+            ])
       ]
     };
 
@@ -192,6 +344,7 @@ export class ChartRenderer {
       maintainAspectRatio: false,
       animation: false,
       plugins: {
+        todayMarker: {} as never,
         legend: {
           display: true
         },
@@ -204,14 +357,36 @@ export class ChartRenderer {
         x: {
           type: "linear" as const,
           ticks: {
-            precision: 0
+            precision: 0,
+            display: true
           },
           grid: {
+            display: false,
             color: theme.grid
+          },
+          // T022: X-axis title showing period label
+          title: {
+            display: rendererConfig.periodLabel.length > 0,
+            text: rendererConfig.periodLabel,
+            align: "end" as const
           }
         },
         y: {
           beginAtZero: true,
+          // T023: Y-axis grid and ticks configuration
+          ticks: {
+            count: 5,
+            maxTicksLimit: 5,
+            callback: (value: number, index: number, ticks: Array<{ value: number }>) => {
+              if (
+                index === ticks.length - 1 &&
+                rendererConfig.unit.length > 0
+              ) {
+                return `${value} ${rendererConfig.unit}`;
+              }
+              return String(value);
+            }
+          },
           grid: {
             color: theme.grid
           }
@@ -227,7 +402,8 @@ export class ChartRenderer {
       this.chart = new Chart(ctx, {
         type: "line",
         data: data as never,
-        options: options as never
+        options: options as never,
+        plugins: [todayMarkerPlugin]
       });
     }
   }

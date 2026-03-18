@@ -3,7 +3,8 @@ import { init as echartsInit, use as echartsUse } from 'echarts/core';
 import { LineChart } from 'echarts/charts';
 import { GridComponent, TooltipComponent, LegendComponent, MarkLineComponent, MarkPointComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
-import type { ECharts, ECOption } from 'echarts/core';
+import type { ECharts } from 'echarts/core';
+import type { EChartsOption } from 'echarts';
 
 import type { ComparisonSeries, ChartRendererConfig, TimeSeriesPoint } from './types';
 
@@ -177,7 +178,7 @@ export class EChartsRenderer {
     labels: { current: string; reference: string },
     primaryColor: string,
     theme: { referenceLine: string; grid: string }
-  ): ECOption {
+  ): EChartsOption {
     // Compute nice max Y value
     const dataMax = Math.max(
       ...currentValues.filter((v) => v !== null) as number[],
@@ -201,14 +202,29 @@ export class EChartsRenderer {
     series.push({
       name: labels.current,
       type: 'line',
+      // ECharts uses `series.color` (and/or itemStyle) for hover symbols and tooltip markers.
+      color: primaryColor,
       data: currentValues.map((y, i) => (y !== null ? [i, y] : null)),
       lineStyle: { color: primaryColor, width: 1.5 },
       areaStyle: {
+        // Ensure the filled area matches the line color, with separate opacity.
+        color: primaryColor,
         opacity: rendererConfig.fillCurrent ? fillCurrentOpacity : 0
       },
       connectNulls: false,
       showSymbol: false,
-      smooth: false
+      smooth: false,
+      // Show a symbol on hover (with the same color as the line).
+      symbol: 'circle',
+      symbolSize: 6,
+      emphasis: {
+        focus: 'series',
+        showSymbol: true,
+        symbolSize: 6,
+        itemStyle: { color: primaryColor },
+        lineStyle: { color: primaryColor }
+      },
+      itemStyle: { color: primaryColor }
     });
 
     // Reference series (T011) - optional
@@ -216,14 +232,27 @@ export class EChartsRenderer {
       series.push({
         name: labels.reference,
         type: 'line',
+        color: theme.referenceLine,
         data: referenceValues.map((y, i) => (y !== null ? [i, y] : null)),
         lineStyle: { color: theme.referenceLine, width: 1.5 },
         areaStyle: {
+          // Ensure the filled area matches the reference line color, with separate opacity.
+          color: theme.referenceLine,
           opacity: rendererConfig.fillReference ? fillReferenceOpacity : 0
         },
         connectNulls: false,
         showSymbol: false,
-        smooth: false
+        smooth: false,
+        symbol: 'circle',
+        symbolSize: 6,
+        emphasis: {
+          focus: 'series',
+          showSymbol: true,
+          symbolSize: 6,
+          itemStyle: { color: theme.referenceLine },
+          lineStyle: { color: theme.referenceLine }
+        },
+        itemStyle: { color: theme.referenceLine }
       });
     }
 
@@ -298,12 +327,24 @@ export class EChartsRenderer {
         rendererConfig.forecastTotal !== undefined
       ) {
         series.push({
+          name: 'Forecast',
           type: 'line',
+          color: primaryColor,
           data: [[todaySlotIndex, todayCurrentY], [fullTimeline.length - 1, rendererConfig.forecastTotal]],
           lineStyle: { type: 'dashed', color: primaryColor, width: 1.5 },
           areaStyle: { opacity: 0 },
           showSymbol: false,
-          connectNulls: false
+          connectNulls: false,
+          symbol: 'circle',
+          symbolSize: 6,
+          emphasis: {
+            focus: 'series',
+            showSymbol: true,
+            symbolSize: 6,
+            itemStyle: { color: primaryColor },
+            lineStyle: { color: primaryColor }
+          },
+          itemStyle: { color: primaryColor }
         });
       }
     } else {
@@ -315,7 +356,7 @@ export class EChartsRenderer {
       }
     }
 
-    const option: ECOption = {
+    const option: EChartsOption = {
       animation: false,
       grid: { containLabel: true },
       legend: { show: true },
@@ -329,7 +370,8 @@ export class EChartsRenderer {
         min: 0,
         max: fullTimeline.length - 1,
         interval: 1,
-        boundaryGap: false,
+        // For `value` axis ECharts typings expect a tuple; [0,0] means "no gap".
+        boundaryGap: [0, 0],
         splitLine: { show: false }
       },
       yAxis: {

@@ -187,6 +187,20 @@ export class EChartsRenderer {
     );
     const yMax = this.niceMax(dataMax, 4);
 
+    const xMax = Math.max(fullTimeline.length - 1, 0);
+    const xLabelStops = new Set<number>([
+      0,
+      Math.round(xMax * 0.25),
+      Math.round(xMax * 0.5),
+      Math.round(xMax * 0.75),
+      xMax
+    ]);
+    const formatXAxisLabel = (value: number): string => {
+      const tick = Math.round(value);
+      if (tick < 0 || tick > xMax) return '';
+      return xLabelStops.has(tick) ? String(tick) : '';
+    };
+
     const series: any[] = [];
 
     // Current series (T009)
@@ -460,11 +474,14 @@ export class EChartsRenderer {
       xAxis: {
         type: 'value',
         min: 0,
-        max: fullTimeline.length - 1,
+        max: xMax,
         interval: 1,
         // For `value` axis ECharts typings expect a tuple; [0,0] means "no gap".
         boundaryGap: [0, 0],
-        splitLine: { show: false }
+        splitLine: { show: false },
+        // Show only a few readable labels (avoid overlapping text).
+        axisTick: { show: false },
+        axisLabel: { formatter: (value: number) => formatXAxisLabel(value) }
       },
       yAxis: {
         type: 'value',

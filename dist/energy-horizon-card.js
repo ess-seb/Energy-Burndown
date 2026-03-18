@@ -21591,7 +21591,7 @@ class qA {
         boundaryGap: [0, 0],
         splitLine: { show: !1 },
         // Show only a few readable labels (avoid overlapping text).
-        axisTick: { show: !0 },
+        axisTick: { show: !1 },
         axisLine: { show: !1 },
         axisLabel: {
           formatter: (b) => c(b),

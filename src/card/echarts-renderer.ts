@@ -494,7 +494,7 @@ export class EChartsRenderer {
         boundaryGap: [0, 0],
         splitLine: { show: false },
         // Show only a few readable labels (avoid overlapping text).
-        axisTick: { show: true },
+        axisTick: { show: false },
         axisLine: { show: false },
         axisLabel: {
           formatter: (value: number) => formatXAxisLabel(value),

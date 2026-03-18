@@ -114,6 +114,11 @@ export interface ChartRendererConfig {
   fillReference: boolean;
   fillCurrentOpacity: number;
   fillReferenceOpacity: number;
+  comparisonMode: ComparisonMode;
+  language: string;
+  numberLocale: string;
+  precision: number;
+  forecastLabel: string;
   showForecast: boolean;
   forecastTotal?: number;
   unit: string;

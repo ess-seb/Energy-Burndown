@@ -498,7 +498,10 @@ export class EChartsRenderer {
         axisLabel: {
           formatter: (value: number) => formatXAxisLabel(value),
           margin: tickLabelGapPx,
-          hideOverlap: true
+          hideOverlap: true,
+          // Keeps the last (max) label within the grid by aligning its right edge to the right-side tick.
+          // This prevents cases where the last label gets clipped/shifted (e.g. `30` vs `3` / `365` not visible).
+          alignMaxLabel: 'right'
         }
       },
       yAxis: {

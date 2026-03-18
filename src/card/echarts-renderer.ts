@@ -327,7 +327,7 @@ export class EChartsRenderer {
         rendererConfig.forecastTotal !== undefined
       ) {
         series.push({
-          name: 'Forecast',
+          name: rendererConfig.forecastLabel,
           type: 'line',
           color: primaryColor,
           data: [[todaySlotIndex, todayCurrentY], [fullTimeline.length - 1, rendererConfig.forecastTotal]],
@@ -363,7 +363,99 @@ export class EChartsRenderer {
       tooltip: {
         trigger: 'axis',
         axisPointer: { type: 'shadow' },
-        appendTo: this.container
+        appendTo: this.container,
+        formatter: (params: unknown) => {
+          const items = Array.isArray(params) ? params : [params];
+          const first: any = items[0] ?? {};
+
+          const rawIndex =
+            first?.dataIndex ??
+            first?.axisValue ??
+            first?.data?.[0] ??
+            first?.value?.[0];
+          const slotIndex =
+            typeof rawIndex === 'number' ? rawIndex : Number(rawIndex);
+
+          const comparisonMode = rendererConfig.comparisonMode;
+          const language = rendererConfig.language;
+          const numberLocale = rendererConfig.numberLocale;
+          const precision = rendererConfig.precision;
+          const unit = rendererConfig.unit;
+
+          const numberFormatter = new Intl.NumberFormat(numberLocale, {
+            minimumFractionDigits: precision,
+            maximumFractionDigits: precision
+          });
+
+          const escapeHtml = (value: string): string =>
+            value
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;');
+
+          const formatHeader = (): string => {
+            if (!Number.isFinite(slotIndex)) return '';
+
+            if (comparisonMode === 'year_over_year') {
+              const dayNumber = Math.trunc(slotIndex) + 1;
+              const lang = String(language).toLowerCase();
+
+              let unitWord: string;
+              if (lang.startsWith('pl')) {
+                unitWord = dayNumber === 1 ? 'dzień' : 'dni';
+              } else {
+                unitWord = dayNumber === 1 ? 'day' : 'days';
+              }
+
+              return `${dayNumber} ${unitWord}`;
+            }
+
+            // month_over_year
+            const ts = fullTimeline[slotIndex];
+            if (ts == null) return '';
+
+            return new Intl.DateTimeFormat(language, {
+              day: 'numeric',
+              month: 'long'
+            }).format(new Date(ts));
+          };
+
+          const header = formatHeader();
+
+          const valueLines: string[] = [];
+          for (const p of items) {
+            const item: any = p ?? {};
+
+            const candidate = item?.data ?? item?.value;
+
+            let y: unknown;
+            if (Array.isArray(candidate)) {
+              y = candidate.length > 1 ? candidate[1] : candidate[0];
+            } else {
+              y = candidate;
+            }
+
+            if (y === null || y === undefined) continue;
+
+            const yNum = typeof y === 'number' ? y : Number(y);
+            if (!Number.isFinite(yNum)) continue;
+
+            const seriesName = typeof item?.seriesName === 'string' ? item.seriesName : '';
+            const formatted = numberFormatter.format(yNum);
+            const escapedSeries = escapeHtml(seriesName);
+            const escapedUnit = escapeHtml(unit);
+
+            valueLines.push(
+              `<div class="tooltip-row">${escapedSeries ? `${escapedSeries}: ` : ''}${formatted} ${escapedUnit}</div>`
+            );
+          }
+
+          const valuesHtml = valueLines.join('');
+          return `<div class="tooltip-container"><div class="tooltip-header">${escapeHtml(
+            header
+          )}</div>${valuesHtml}</div>`;
+        }
       },
       xAxis: {
         type: 'value',

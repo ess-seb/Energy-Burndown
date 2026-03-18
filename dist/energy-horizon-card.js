@@ -21686,6 +21686,7 @@ class qA {
         splitNumber: 4,
         // Oś ma się składać tylko z ticków i wartości (bez pionowej linii osi).
         axisLine: { show: !1 },
+        axisTick: { show: !1 },
         axisLabel: {
           formatter: (T) => T === f ? `${T} ${n.unit}` : String(T),
           margin: 8,

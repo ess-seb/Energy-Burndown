@@ -12,9 +12,8 @@
     "lint": "eslint --config config/eslint.config.js \"src/**/*.{ts,tsx,js,jsx}\""
   },
   "dependencies": {
-    "chart.js": "^4.4.3",
-    "chartjs-adapter-date-fns": "^3.0.0",
     "date-fns": "^4.1.0",
+    "echarts": "^5.6.0",
     "lit": "^3.1.0"
   },
   "devDependencies": {

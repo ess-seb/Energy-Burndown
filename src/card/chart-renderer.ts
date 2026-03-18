@@ -1,29 +1,34 @@
-import {
-  Chart,
-  LineController,
-  LineElement,
-  PointElement,
-  LinearScale,
-  TimeScale,
-  Tooltip,
-  Legend,
-  Filler
-} from "chart.js";
-import "chartjs-adapter-date-fns";
+// DEPRECATED: This file is being replaced by echarts-renderer.ts during the 003-echarts-migration.
+// Imports are commented out to prevent build errors during migration.
+// Do not use ChartRenderer - use EChartsRenderer instead.
+
+/* eslint-disable */
+// import {
+//   Chart,
+//   LineController,
+//   LineElement,
+//   PointElement,
+//   LinearScale,
+//   TimeScale,
+//   Tooltip,
+//   Legend,
+//   Filler
+// } from "chart.js";
+// import "chartjs-adapter-date-fns";
 import type { ComparisonSeries, ChartRendererConfig, TimeSeriesPoint } from "./types";
 
 /** Labels must be pre-localized by the card; this module does not use translation files. */
 
-Chart.register(
-  LineController,
-  LineElement,
-  PointElement,
-  LinearScale,
-  TimeScale,
-  Tooltip,
-  Legend,
-  Filler
-);
+// Chart.register(
+//   LineController,
+//   LineElement,
+//   PointElement,
+//   LinearScale,
+//   TimeScale,
+//   Tooltip,
+//   Legend,
+//   Filler
+// );
 
 // Internal type used in Phase 3 for chart data points
 type ChartPoint = { x: number; y: number | null };

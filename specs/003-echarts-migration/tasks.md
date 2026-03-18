@@ -15,8 +15,8 @@
 
 **Purpose**: Aktualizacja `package.json` — dodanie ECharts, usunięcie Chart.js
 
-- [ ] T001 Install `echarts@^5.6.0` via `npm install echarts@^5.6.0`
-- [ ] T002 Remove `chart.js` and `chartjs-adapter-date-fns` via `npm uninstall chart.js chartjs-adapter-date-fns`
+- [x] T001 Install `echarts@^5.6.0` via `npm install echarts@^5.6.0`
+- [x] T002 Remove `chart.js` and `chartjs-adapter-date-fns` via `npm uninstall chart.js chartjs-adapter-date-fns`
 
 **Checkpoint**: `package.json` zawiera `echarts ^5.6.0`; `chart.js` i `chartjs-adapter-date-fns` nie figurują w żadnej sekcji zależności
 
@@ -28,10 +28,10 @@
 
 ⚠️ **CRITICAL**: Żadne user story nie może być implementowane przed ukończeniem tej fazy
 
-- [ ] T003 Create `src/card/echarts-renderer.ts` with modular ECharts imports (`echarts/core`, `echarts/charts`, `echarts/components`, `echarts/renderers`), `echarts.use([LineChart, GridComponent, TooltipComponent, LegendComponent, MarkLineComponent, MarkPointComponent, CanvasRenderer])` call at module level, and class skeleton with private fields (`container: HTMLElement`, `instance: ECharts | undefined`, `resizeObserver: ResizeObserver`, `lastHash: string | undefined`) and stub public methods `update()` and `destroy()`
-- [ ] T004 [P] Port `alignSeriesOnTimeline()` private method 1:1 from `src/card/chart-renderer.ts` to `src/card/echarts-renderer.ts`
-- [ ] T005 [P] Implement `resolveColor(primaryColorConfig: string): string` and `getThemeColors(): { referenceLine: string; grid: string }` color helpers in `src/card/echarts-renderer.ts` (same CSS variable lookup logic as in `chart-renderer.ts`)
-- [ ] T006 [P] Implement `niceMax(dataMax: number, splitCount: number): number` helper in `src/card/echarts-renderer.ts` using algorithm: if `dataMax <= 0` return `splitCount`; compute `step = 10^floor(log10(dataMax/splitCount))`; round `dataMax/splitCount/step` up to nearest `[1, 2, 2.5, 5, 10]`; return `ceil(dataMax / niceStep) * niceStep`
+- [x] T003 Create `src/card/echarts-renderer.ts` with modular ECharts imports (`echarts/core`, `echarts/charts`, `echarts/components`, `echarts/renderers`), `echarts.use([LineChart, GridComponent, TooltipComponent, LegendComponent, MarkLineComponent, MarkPointComponent, CanvasRenderer])` call at module level, and class skeleton with private fields (`container: HTMLElement`, `instance: ECharts | undefined`, `resizeObserver: ResizeObserver`, `lastHash: string | undefined`) and stub public methods `update()` and `destroy()`
+- [x] T004 [P] Port `alignSeriesOnTimeline()` private method 1:1 from `src/card/chart-renderer.ts` to `src/card/echarts-renderer.ts`
+- [x] T005 [P] Implement `resolveColor(primaryColorConfig: string): string` and `getThemeColors(): { referenceLine: string; grid: string }` color helpers in `src/card/echarts-renderer.ts` (same CSS variable lookup logic as in `chart-renderer.ts`)
+- [x] T006 [P] Implement `niceMax(dataMax: number, splitCount: number): number` helper in `src/card/echarts-renderer.ts` using algorithm: if `dataMax <= 0` return `splitCount`; compute `step = 10^floor(log10(dataMax/splitCount))`; round `dataMax/splitCount/step` up to nearest `[1, 2, 2.5, 5, 10]`; return `ceil(dataMax / niceStep) * niceStep`
 
 **Checkpoint**: `src/card/echarts-renderer.ts` kompiluje się bez błędów TypeScript; klasa istnieje z poprawnymi prywatnymi polami i metodami-stubami
 
@@ -45,14 +45,14 @@
 
 ### Implementation for User Story 1
 
-- [ ] T007 [US1] Implement `constructor(container: HTMLElement)`: call `echarts.init(container)`, assign to `this.instance`; create `ResizeObserver(() => this.instance?.resize())` and call `.observe(container)`; implement `destroy()`: `resizeObserver.disconnect()`, `instance?.dispose()`, `instance = undefined` in `src/card/echarts-renderer.ts`
-- [ ] T008 [US1] Implement `buildOption()` skeleton with static chart-level settings in `src/card/echarts-renderer.ts`: `animation: false` (FR-012); `grid: { containLabel: true }`; `legend: { show: true }` (FR-011); `tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, appendTo: this.container }` (FR-010 — Shadow DOM fix); `xAxis: { type: 'value', min: 0, max: fullTimeline.length - 1, interval: 1, boundaryGap: false, splitLine: { show: false } }` (FR-009); `yAxis: { type: 'value', min: 0, max: niceMax(dataMax, 4), splitNumber: 4, axisLabel: { formatter: (v) => v === yMax ? \`\${v} \${unit}\` : String(v) } }` (FR-007, FR-008)
-- [ ] T009 [US1] Implement current series object inside `buildOption()` in `src/card/echarts-renderer.ts`: `type: 'line'`, `name: labels.current`, `data: currentValues`, `lineStyle: { color: primaryColor, width: 1.5 }`, `areaStyle: { opacity: fillCurrent ? fillCurrentOpacity / 100 : 0 }` (FR-005), `connectNulls: false` (FR-002), `showSymbol: false`, `smooth: false`
-- [ ] T010 [US1] Implement today marker in `buildOption()` inside current series in `src/card/echarts-renderer.ts`: compute `todaySlotIndex = fullTimeline.indexOf(todayTimestamp)`; compute `yTop` per FR-004 (Variant A when at least one series has value: `yTop = currentY !== null && referenceY !== null ? Math.max(currentY, referenceY) : (currentY ?? referenceY)`; Variant B when both null: use `{ xAxis: todaySlotIndex }` form); add `markLine: { silent: true, symbol: ['none', 'none'], data: [...], lineStyle: { type: 'dashed', color: primaryColor, width: 1.5 } }` (FR-003, FR-004); add `markPoint: { silent: true, data: todayCurrentY !== null ? [{ coord: [todaySlotIndex, todayCurrentY], symbol: 'circle', symbolSize: 6, itemStyle: { color: primaryColor } }] : [] }` (FR-003, FR-013)
-- [ ] T011 [US1] Implement optional reference series in `buildOption()` in `src/card/echarts-renderer.ts`: conditionally push series when `series.reference` is defined; `lineStyle: { color: theme.referenceLine, width: 1.5 }`, `areaStyle: { opacity: fillReference ? fillReferenceOpacity / 100 : 0 }`, `connectNulls: false`, `markPoint` for today reference dot when `todayReferenceY !== null`
-- [ ] T012 [US1] Implement optional forecast series in `buildOption()` in `src/card/echarts-renderer.ts`: conditionally push when `rendererConfig.showForecast && todaySlotIndex >= 0 && todayCurrentY !== null && forecastTotal !== undefined`; `data: [[todaySlotIndex, todayCurrentY], [fullTimeline.length - 1, forecastTotal]]`; `lineStyle: { type: 'dashed', color: primaryColor, width: 1.5 }`, `areaStyle: { opacity: 0 }`, `showSymbol: false`, `connectNulls: false` (FR-006)
-- [ ] T013 [US1] Implement `update()` method in `src/card/echarts-renderer.ts`: guard `if (!this.instance) return`; compute hash of inputs via `JSON.stringify`; return early if `hash === this.lastHash` (FR-012 perf); call `alignSeriesOnTimeline()` for both current and reference series; call `resolveColor()` + `getThemeColors()`; call `buildOption()`; call `this.instance.setOption(option, { notMerge: true })`; update `this.lastHash`
-- [ ] T014 [US1] Update `src/card/cumulative-comparison-chart.ts`: replace `import { ChartRenderer }` with `import { EChartsRenderer }`; change field type `_chartRenderer?: ChartRenderer` to `_chartRenderer?: EChartsRenderer`; change canvas selector `querySelector("canvas")` to `querySelector(".chart-container")`; change constructor call `new ChartRenderer(canvas)` to `new EChartsRenderer(container)`; remove `<canvas></canvas>` from Lit template (ECharts creates its own canvas inside `.chart-container`)
+- [x] T007 [US1] Implement `constructor(container: HTMLElement)`: call `echarts.init(container)`, assign to `this.instance`; create `ResizeObserver(() => this.instance?.resize())` and call `.observe(container)`; implement `destroy()`: `resizeObserver.disconnect()`, `instance?.dispose()`, `instance = undefined` in `src/card/echarts-renderer.ts`
+- [x] T008 [US1] Implement `buildOption()` skeleton with static chart-level settings in `src/card/echarts-renderer.ts`: `animation: false` (FR-012); `grid: { containLabel: true }`; `legend: { show: true }` (FR-011); `tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, appendTo: this.container }` (FR-010 — Shadow DOM fix); `xAxis: { type: 'value', min: 0, max: fullTimeline.length - 1, interval: 1, boundaryGap: false, splitLine: { show: false } }` (FR-009); `yAxis: { type: 'value', min: 0, max: niceMax(dataMax, 4), splitNumber: 4, axisLabel: { formatter: (v) => v === yMax ? \`\${v} \${unit}\` : String(v) } }` (FR-007, FR-008)
+- [x] T009 [US1] Implement current series object inside `buildOption()` in `src/card/echarts-renderer.ts`: `type: 'line'`, `name: labels.current`, `data: currentValues`, `lineStyle: { color: primaryColor, width: 1.5 }`, `areaStyle: { opacity: fillCurrent ? fillCurrentOpacity / 100 : 0 }` (FR-005), `connectNulls: false` (FR-002), `showSymbol: false`, `smooth: false`
+- [x] T010 [US1] Implement today marker in `buildOption()` inside current series in `src/card/echarts-renderer.ts`: compute `todaySlotIndex = fullTimeline.indexOf(todayTimestamp)`; compute `yTop` per FR-004 (Variant A when at least one series has value: `yTop = currentY !== null && referenceY !== null ? Math.max(currentY, referenceY) : (currentY ?? referenceY)`; Variant B when both null: use `{ xAxis: todaySlotIndex }` form); add `markLine: { silent: true, symbol: ['none', 'none'], data: [...], lineStyle: { type: 'dashed', color: primaryColor, width: 1.5 } }` (FR-003, FR-004); add `markPoint: { silent: true, data: todayCurrentY !== null ? [{ coord: [todaySlotIndex, todayCurrentY], symbol: 'circle', symbolSize: 6, itemStyle: { color: primaryColor } }] : [] }` (FR-003, FR-013)
+- [x] T011 [US1] Implement optional reference series in `buildOption()` in `src/card/echarts-renderer.ts`: conditionally push series when `series.reference` is defined; `lineStyle: { color: theme.referenceLine, width: 1.5 }`, `areaStyle: { opacity: fillReference ? fillReferenceOpacity / 100 : 0 }`, `connectNulls: false`, `markPoint` for today reference dot when `todayReferenceY !== null`
+- [x] T012 [US1] Implement optional forecast series in `buildOption()` in `src/card/echarts-renderer.ts`: conditionally push when `rendererConfig.showForecast && todaySlotIndex >= 0 && todayCurrentY !== null && forecastTotal !== undefined`; `data: [[todaySlotIndex, todayCurrentY], [fullTimeline.length - 1, forecastTotal]]`; `lineStyle: { type: 'dashed', color: primaryColor, width: 1.5 }`, `areaStyle: { opacity: 0 }`, `showSymbol: false`, `connectNulls: false` (FR-006)
+- [x] T013 [US1] Implement `update()` method in `src/card/echarts-renderer.ts`: guard `if (!this.instance) return`; compute hash of inputs via `JSON.stringify`; return early if `hash === this.lastHash` (FR-012 perf); call `alignSeriesOnTimeline()` for both current and reference series; call `resolveColor()` + `getThemeColors()`; call `buildOption()`; call `this.instance.setOption(option, { notMerge: true })`; update `this.lastHash`
+- [x] T014 [US1] Update `src/card/cumulative-comparison-chart.ts`: replace `import { ChartRenderer }` with `import { EChartsRenderer }`; change field type `_chartRenderer?: ChartRenderer` to `_chartRenderer?: EChartsRenderer`; change canvas selector `querySelector("canvas")` to `querySelector(".chart-container")`; change constructor call `new ChartRenderer(canvas)` to `new EChartsRenderer(container)`; remove `<canvas></canvas>` from Lit template (ECharts creates its own canvas inside `.chart-container`)
 
 **Checkpoint**: Karta wyświetla wykres w Home Assistant bez wizualnych regresji; `npm run build` kończy się bez błędów; istniejące testy Vitest nie łamią się
 
@@ -66,8 +66,8 @@
 
 ### Implementation for User Story 2
 
-- [ ] T015 [P] [US2] Write unit test in `tests/unit/echarts-renderer.test.ts` verifying that calling `update()` does not invoke any method on `CanvasRenderingContext2D` directly (mock `getContext` and assert it is never called with canvas API methods like `arc`, `stroke`, `fillRect`)
-- [ ] T016 [P] [US2] Write unit test in `tests/unit/echarts-renderer.test.ts` verifying ECOption structure: after `update()`, the option passed to `setOption` contains `markLine` and `markPoint` for today marker (not a custom plugin callback), and current series uses `areaStyle.opacity` for fill (not a custom drawing function) — assert by spying on `instance.setOption` and inspecting the option argument
+- [x] T015 [P] [US2] Write unit test in `tests/unit/echarts-renderer.test.ts` verifying that calling `update()` does not invoke any method on `CanvasRenderingContext2D` directly (mock `getContext` and assert it is never called with canvas API methods like `arc`, `stroke`, `fillRect`)
+- [x] T016 [P] [US2] Write unit test in `tests/unit/echarts-renderer.test.ts` verifying ECOption structure: after `update()`, the option passed to `setOption` contains `markLine` and `markPoint` for today marker (not a custom plugin callback), and current series uses `areaStyle.opacity` for fill (not a custom drawing function) — assert by spying on `instance.setOption` and inspecting the option argument
 
 **Checkpoint**: `npm test` — T015 i T016 przechodzą; code review potwierdza brak wywołań `ctx.arc`, `ctx.stroke`, `ctx.fillRect` w `echarts-renderer.ts`
 
@@ -81,8 +81,8 @@
 
 ### Implementation for User Story 3
 
-- [ ] T017 [US3] Verify `src/card/echarts-renderer.ts` has no `import * as echarts from 'echarts'` — only subpath imports: `echarts/core`, `echarts/charts`, `echarts/components`, `echarts/renderers` (FR-015, SC-003); fix if violation found
-- [ ] T018 [US3] Run `npm run build`; inspect generated bundle in `dist/` — verify no strings `chart.js` or `chartjs-adapter-date-fns` present in output; measure gzip size and confirm increase ≤ 50 kB vs pre-migration baseline (SC-004)
+- [x] T017 [US3] Verify `src/card/echarts-renderer.ts` has no `import * as echarts from 'echarts'` — only subpath imports: `echarts/core`, `echarts/charts`, `echarts/components`, `echarts/renderers` (FR-015, SC-003); fix if violation found
+- [x] T018 [US3] Run `npm run build`; inspect generated bundle in `dist/` — verify no strings `chart.js` or `chartjs-adapter-date-fns` present in output; measure gzip size and confirm increase ≤ 50 kB vs pre-migration baseline (SC-004)
 
 **Checkpoint**: Bundle clean — zero Chart.js references; gzip delta ≤ 50 kB
 
@@ -96,9 +96,9 @@
 
 ### Implementation for User Story 4
 
-- [ ] T019 [P] [US4] Write unit test in `tests/unit/echarts-renderer.test.ts` verifying lifecycle: calling `update()` three times on same renderer results in exactly 1 active ECharts instance — mock `echarts.init` and assert it is called once, `setOption` called three times (SC-005)
-- [ ] T020 [P] [US4] Write unit test in `tests/unit/echarts-renderer.test.ts` verifying `destroy()`: after `destroy()`, `instance.dispose()` is called, `this.instance` becomes `undefined`, and `resizeObserver.disconnect()` is called — mock both and assert (FR-019, SC-005)
-- [ ] T021 [P] [US4] Write unit test in `tests/unit/echarts-renderer.test.ts` verifying resize behavior: after triggering ResizeObserver callback, `instance.resize()` is called without `echarts.init` being called again (SC-006, FR-018)
+- [x] T019 [P] [US4] Write unit test in `tests/unit/echarts-renderer.test.ts` verifying lifecycle: calling `update()` three times on same renderer results in exactly 1 active ECharts instance — mock `echarts.init` and assert it is called once, `setOption` called three times (SC-005)
+- [x] T020 [P] [US4] Write unit test in `tests/unit/echarts-renderer.test.ts` verifying `destroy()`: after `destroy()`, `instance.dispose()` is called, `this.instance` becomes `undefined`, and `resizeObserver.disconnect()` is called — mock both and assert (FR-019, SC-005)
+- [x] T021 [P] [US4] Write unit test in `tests/unit/echarts-renderer.test.ts` verifying resize behavior: after triggering ResizeObserver callback, `instance.resize()` is called without `echarts.init` being called again (SC-006, FR-018)
 
 **Checkpoint**: `npm test` — T019, T020, T021 przechodzą; brak wycieków instancji potwierdzony
 
@@ -108,9 +108,9 @@
 
 **Purpose**: Jakość kodu, TypeScript strict, walidacja całości
 
-- [ ] T022 [P] Run `npm test` and confirm all Vitest tests pass (0 failures)
-- [ ] T023 [P] Run `npm run lint` and fix any TypeScript strict-mode or ESLint errors introduced in `src/card/echarts-renderer.ts` or `src/card/cumulative-comparison-chart.ts`
-- [ ] T024 Validate all 11 items from `specs/003-echarts-migration/quickstart.md` implementation checklist (bottom of file) — mark each item as confirmed
+- [x] T022 [P] Run `npm test` and confirm all Vitest tests pass (0 failures)
+- [x] T023 [P] Run `npm run lint` and fix any TypeScript strict-mode or ESLint errors introduced in `src/card/echarts-renderer.ts` or `src/card/cumulative-comparison-chart.ts`
+- [x] T024 Validate all 11 items from `specs/003-echarts-migration/quickstart.md` implementation checklist (bottom of file) — mark each item as confirmed
 
 ---
 

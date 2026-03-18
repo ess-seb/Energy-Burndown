@@ -381,8 +381,9 @@ export class EChartsRenderer {
       // `containLabel: true` keeps axis labels inside the grid area.
       grid: {
         containLabel: true,
-        left: 0,
-        right: 0,
+        // Give the X-axis edge labels some breathing room on responsive layouts.
+        left: tickLabelGapPx,
+        right: tickLabelGapPx,
         top: 32,
         bottom: 0
       },
@@ -493,12 +494,14 @@ export class EChartsRenderer {
         boundaryGap: [0, 0],
         splitLine: { show: false },
         // Show only a few readable labels (avoid overlapping text).
-        axisTick: { show: false },
+        axisTick: { show: true },
         axisLine: { show: false },
         axisLabel: {
           formatter: (value: number) => formatXAxisLabel(value),
           margin: tickLabelGapPx,
           hideOverlap: true,
+          // Keep both edge labels inside the grid area.
+          alignMinLabel: 'left',
           // Keeps the last (max) label within the grid by aligning its right edge to the right-side tick.
           // This prevents cases where the last label gets clipped/shifted (e.g. `30` vs `3` / `365` not visible).
           alignMaxLabel: 'right'

@@ -618,6 +618,7 @@ export class EChartsRenderer {
         splitNumber: 4,
         // Oś ma się składać tylko z ticków i wartości (bez pionowej linii osi).
         axisLine: { show: false },
+        axisTick: { show: false },
         axisLabel: {
           formatter: (value: number) => {
             if (value === yMax) {

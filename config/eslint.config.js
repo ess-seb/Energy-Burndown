@@ -11,7 +11,8 @@ const browserGlobals = {
   HTMLElement: "readonly",
   HTMLCanvasElement: "readonly",
   getComputedStyle: "readonly",
-  Document: "readonly"
+  Document: "readonly",
+  ResizeObserver: "readonly"
 };
 
 export default [

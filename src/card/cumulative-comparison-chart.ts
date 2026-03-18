@@ -10,7 +10,7 @@ import {
   computeTextSummary,
   buildFullTimeline
 } from "./ha-api";
-import { ChartRenderer } from "./chart-renderer";
+import { EChartsRenderer } from "./echarts-renderer";
 import {
   resolveLocale,
   createLocalize,
@@ -62,7 +62,7 @@ export class EnergyHorizonCard extends LitElement implements LovelaceCard {
   declare _config: CardConfig;
   _state: CardState = { status: "loading" };
 
-  private _chartRenderer?: ChartRenderer;
+  private _chartRenderer?: EChartsRenderer;
 
   static styles = energyHorizonCardStyles;
 
@@ -120,11 +120,11 @@ export class EnergyHorizonCard extends LitElement implements LovelaceCard {
         this._state.comparisonSeries
       ) {
         if (!this._chartRenderer) {
-          const canvas = this.renderRoot.querySelector("canvas") as
-            | HTMLCanvasElement
+          const container = this.renderRoot.querySelector(".chart-container") as
+            | HTMLElement
             | null;
-          if (canvas) {
-            this._chartRenderer = new ChartRenderer(canvas);
+          if (container) {
+            this._chartRenderer = new EChartsRenderer(container);
           }
         }
 
@@ -590,9 +590,7 @@ export class EnergyHorizonCard extends LitElement implements LovelaceCard {
             </div>`
           : null}
 
-        <div class="chart-container ebc-chart">
-          <canvas></canvas>
-        </div>
+        <div class="chart-container ebc-chart"></div>
       </div>
     </ha-card>`;
   }

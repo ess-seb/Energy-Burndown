@@ -356,7 +356,7 @@ export class ChartRenderer {
       plugins: {
         todayMarker: {} as never,
         legend: {
-          display: rendererConfig.showLegend
+          display: rendererConfig.showLegend === true
         },
         tooltip: {
           mode: "index" as const,

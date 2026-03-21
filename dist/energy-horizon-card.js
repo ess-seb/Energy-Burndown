@@ -21662,7 +21662,7 @@ class jA {
         bottom: 0
       },
       legend: {
-        show: n.showLegend,
+        show: n.showLegend === !0,
         top: 0,
         left: "center",
         textStyle: { color: s.primaryText },
@@ -22165,7 +22165,7 @@ const Uo = class Uo extends An {
         fillCurrentOpacity: io(this._config.fill_current_opacity),
         fillReferenceOpacity: io(this._config.fill_reference_opacity),
         connectNulls: this._config.connect_nulls ?? !0,
-        showLegend: this._config.show_legend ?? !1,
+        showLegend: this._config.show_legend === !0,
         showForecast: this._config.show_forecast ?? !1,
         forecastTotal: (h = this._state.forecast) == null ? void 0 : h.forecast_total,
         unit: ((v = this._state.forecast) == null ? void 0 : v.unit) ?? "",
@@ -22187,7 +22187,7 @@ const Uo = class Uo extends An {
       fillCurrentOpacity: io(this._config.fill_current_opacity),
       fillReferenceOpacity: io(this._config.fill_reference_opacity),
       connectNulls: this._config.connect_nulls ?? !0,
-      showLegend: this._config.show_legend ?? !1,
+      showLegend: this._config.show_legend === !0,
       showForecast: this._config.show_forecast ?? !1,
       forecastTotal: (g = this._state.forecast) == null ? void 0 : g.forecast_total,
       unit: f,

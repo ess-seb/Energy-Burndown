@@ -681,7 +681,7 @@ describe('EChartsRenderer', () => {
       document.body.removeChild(host);
     });
 
-    it("sets legend.show from ChartRendererConfig.showLegend", () => {
+    it("sets legend.show from ChartRendererConfig.showLegend (only strict boolean true)", () => {
       const container = document.createElement("div");
       document.body.appendChild(container);
 
@@ -707,6 +707,26 @@ describe('EChartsRenderer', () => {
       );
       const [optionVisible] = setOptionMock.mock.calls[0] as [Record<string, unknown>];
       expect((optionVisible.legend as { show?: boolean }).show).toBe(true);
+
+      // Bad runtime values (e.g. YAML strings): must not enable legend — only `=== true` does.
+      const coercedHiddenCases: Array<{ label: string; showLegend: unknown }> = [
+        { label: "string false", showLegend: "false" },
+        { label: "string true", showLegend: "true" },
+        { label: "number 1", showLegend: 1 }
+      ];
+      for (const { label, showLegend } of coercedHiddenCases) {
+        setOptionMock.mockClear();
+        renderer.update(
+          seriesData,
+          fullTimeline,
+          buildBaseRendererConfig({
+            showLegend: showLegend as ChartRendererConfig["showLegend"]
+          }),
+          labels
+        );
+        const [opt] = setOptionMock.mock.calls[0] as [Record<string, unknown>];
+        expect((opt.legend as { show?: boolean }).show, label).toBe(false);
+      }
 
       renderer.destroy();
       document.body.removeChild(container);

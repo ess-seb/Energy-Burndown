@@ -1,7 +1,8 @@
-<a href="https://buycoffee.to/hello.sebastian" target="_blank"><img src="https://buycoffee.to/static/img/share/share-button-primary.png" style="width: 351px; height: 92px" alt="Buy me a coffee on buycoffee.to"></a>
+
 
 # Energy Horizon Card
 [![Buy Me A Coffee](https://img.buymeacoffee.com/button-api/?text=Buy+me+a+coffee&emoji=&slug=hello.sebastian&button_colour=FFDD00&font_colour=000000&font_family=Lato&outline_colour=000000&coffee_colour=ffffff)](https://www.buymeacoffee.com/hello.sebastian)
+<a href="https://buycoffee.to/hello.sebastian" target="_blank"><img src="https://buycoffee.to/static/img/share/share-button-primary.png" style="width: 195px; height: 51px" alt="Buy me a coffee on buycoffee.to"></a>
 
 A Lovelace card for Home Assistant that compares cumulative energy usage between the current period and a corresponding historical period (year-over-year or month-over-year), with a chart, summary stats, and optional forecast.
 

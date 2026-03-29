@@ -1,6 +1,6 @@
 {
   "name": "energy-horizon-card",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "description": "Custom Home Assistant Lovelace card for cumulative energy usage comparison (Energy Horizon).",
   "type": "module",
   "scripts": {
@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "TZ=UTC vitest run",
     "test:watch": "vitest",
-    "lint": "eslint --config config/eslint.config.js \"src/**/*.{ts,tsx,js,jsx}\""
+    "lint": "eslint --config config/eslint.config.js \"src/**/*.{ts,tsx,js,jsx}\"",
+    "deploy": "npm run build && scp dist/energy-horizon-card.js root@192.168.X.X:/config/www/energy-horizon-card.js"
   },
   "dependencies": {
     "date-fns": "^4.1.0",

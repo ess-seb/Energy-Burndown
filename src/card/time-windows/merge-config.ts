@@ -1,6 +1,9 @@
-import type { ComparisonMode } from "../types";
-import type { TimeWindowYaml } from "../types";
-import type { MergedTimeWindowConfig } from "../types";
+import type {
+  CardConfig,
+  ComparisonMode,
+  MergedTimeWindowConfig,
+  TimeWindowYaml
+} from "../types";
 import { getPresetTemplate } from "./presets";
 
 function deepMerge<T extends Record<string, unknown>>(
@@ -65,4 +68,24 @@ export function mergeTimeWindowConfig(input: {
   ) as MergedTimeWindowConfig;
   stripLegacyWhenGeneric(merged, preset);
   return merged;
+}
+
+/**
+ * Preset/YAML merge plus card-level `aggregation` (same default chain as the card’s data load path).
+ */
+export function buildMergedTimeWindowConfig(
+  config: Pick<
+    CardConfig,
+    "comparison_preset" | "time_window" | "period_offset" | "aggregation"
+  >
+): MergedTimeWindowConfig {
+  const mergedBase = mergeTimeWindowConfig({
+    mode: config.comparison_preset,
+    timeWindowPartial: config.time_window,
+    periodOffset: config.period_offset
+  });
+  return {
+    ...mergedBase,
+    aggregation: mergedBase.aggregation ?? config.aggregation
+  };
 }

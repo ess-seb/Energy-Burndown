@@ -19,6 +19,18 @@ Zamiast osobnych, sztywnych trybów w kodzie, karta buduje **listę okien czasow
 | `count` | **Liczba okien** do wygenerowania (np. 2 = bieżące + jedno wstecz). |
 | `aggregation` | **Granulacja** pobieranych danych (np. `day`, `month`, `hour`) — formalnie należy do konfiguracji okna. |
 
+## Twarde limity techniczne (LTS)
+
+Dane wykresu pochodzą z **statystyk długoterminowych (LTS) / rekordera** Home Assistant. W praktyce minimalna rozdzielczość sensowna dla tej karty to **1 godzina** — poniżej tego poziomu konfiguracja jest **odrzucana** (błąd karty przy zapisie konfiguracji), bez autokorekty wartości.
+
+Powiązanie z tabelą parametrów powyżej:
+
+- **Nie używaj** kotwic innych niż `start_of_year`, `start_of_month`, `start_of_hour`, `now` (np. **`start_of_minute`** — niedozwolone).
+- **`duration`** musi po parsowaniu odpowiadać co najmniej **1 h** (np. `30m` — błąd; `1h`, `90m` — OK).
+- **`aggregation`** (także na poziomie karty, po scaleniu z `time_window`) musi być jednym z `hour`, `day`, `week`, `month` albo **pominięte** (wtedy domyślne `day` jest nadal „brak jawnej wartości”, nie naprawa złego tokenu). Wartości typu `5m` są **niedozwolone**.
+
+Jeśli utrzymujesz osobną [GitHub Wiki](https://github.com/hello-sebastian/energy-horizon/wiki), zsynchronizuj ten akapit po zmianach w repozytorium (patrz nagłówek tego pliku).
+
 ## Preset `comparison_preset` (UI: Comparison Preset)
 
 W YAML kanonicznym kluczem jest **`comparison_preset`** (dawniej `comparison_mode`; legacy nadal działa). Preset to **zestaw domyślnych wartości** powyższych pól. Jeśli dodasz blok `time_window`, **nadpisujesz tylko to, co wpiszesz** — reszta zostaje z presetu.

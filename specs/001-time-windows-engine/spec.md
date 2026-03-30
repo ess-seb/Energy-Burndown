@@ -13,6 +13,16 @@
 - Q: Gdy po scaleniu konfiguracji powstaje tylko jedno okno (`count: 1` lub równoważnie), co z metrykami porównawczymi, prognozami i tooltipem? → A: **Opcja A** — wykres pokazuje wyłącznie serię bieżącą; metryki porównawcze oraz prognozy wymagające okna referencyjnego są **ukryte lub wyłączone**; tooltip pokazuje **co najwyżej** wartość bieżącego okna (bez wartości referencyjnej).
 - Q: Górny limit liczby okien z konfiguracji użytkownika? → A: **Bezpiecznik konfiguracji 24** (jak opcja B): po przekroczeniu — komunikat błędu i brak wykresu danych (jak FR-014). **Rdzeń silnika** ma być zdolny do operowania na **większej** liczbie okien w warstwie wewnętrznej (np. testy, przyszłe rozszerzenia); limit **24** dotyczy **wejścia z YAML / konfiguracji Lovelace**, a nie sztywnego zakresu algorytmu wyliczania okien.
 
+### Hard limits / LTS (Long-Term Statistics)
+
+Dane karty pochodzą z **rekordera / statystyk HA (LTS)**. Minimalna rozdzielczość statystyk w tym modelu to **1 godzina** — karta nie wspiera ziarnistości krótszej niż godzina.
+
+- **Kotwice (`anchor`)**: dozwolone są wyłącznie wartości zgodne z silnikiem rozwiązywania okien: `start_of_year`, `start_of_month`, `start_of_hour`, `now`. Kotwice „sub-godzinowe” (np. `start_of_minute`) są **niedozwolone**.
+- **`duration`**: po sparsowaniu musi odpowiadać co najmniej **1 godzinie** rzeczywistego trwania (np. `30m` — odrzucenie; `1h`, `90m` — OK).
+- **`aggregation` (efektywna po scaleniu z `time_window` i poziomem karty)**: musi być jednym z `hour`, `day`, `week`, `month` albo **brak** (wtedy dalsze domyślne `day` jest nadal brakiem jawnej wartości użytkownika, nie autokorektą błędnego tokena). Dowolna inna wartość z YAML (np. `5m`) jest **odrzucana**.
+- **Bez autokorekty**: błędnych wartości nie zaokrąglamy w górę — tylko odrzucenie z błędem.
+- **Fail-fast**: naruszenie powyższych reguł powoduje **standardowy błąd karty Lovelace** (`throw` w `setConfig`), a nie cichy fallback ani pusty wykres bez wyjaśnienia.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 – Presety zachowują znane zachowanie z możliwością nadpisania (Priority: P1)
@@ -63,7 +73,7 @@ Użytkownik rozlicza energię od ustalonego dnia w roku (np. cykl roczny od paź
 
 ### User Story 4 – Porównanie godzinowe (Priority: P3)
 
-Użytkownik chce zobaczyć bieżącą godzinę i kilka poprzednich godzin (np. 6 okien po 1 h). Konfiguruje kotwicę do początku godziny, krótki `duration` i `step` godzinowy oraz odpowiednią `count`.
+Użytkownik chce zobaczyć bieżącą godzinę i kilka poprzednich godzin (np. 6 okien po 1 h). Konfiguruje kotwicę do początku godziny, `duration` i `step` na poziomie **co najmniej jednej godziny** oraz odpowiednią `count`. Przy **LTS** minimalny sensowny „krok” rozdzielczości to **godzina** — analiza sub-godzinna (np. minuty) nie jest obsługiwana przez źródło danych karty.
 
 **Why this priority**: Rozszerza kartę do analizy krótkich horyzontów bez zmiany edytora wizualnego.
 
@@ -97,7 +107,7 @@ Zaawansowany użytkownik czyta wiki lub dokumentację projektu i rozumie znaczen
 - Granica czasu lokalnego vs UTC: zakresy muszą być spójne z oczekiwaniem użytkownika HA (czas lokalny instalacji / encji zgodnie z obecną konwencją karty).
 - Okna dodatkowe (indeks ≥ 2): nie wliczają się do prognoz ani podsumowań zależnych od „bieżącego vs referencyjnego” — tylko wizualne tło; musi być to konsekwentne w całej karcie.
 - Różna długość okien: oś X może być dłuższa niż okno bieżące (FR-009 — najdłuższe okno); **mianownik prognozy** (ukończony ułamek okresu, progi procentowe w `computeForecast`) dotyczy wyłącznie **okna o indeksie 0**, a nie długości osi ani najdłuższego okna.
-- Agregacja (`aggregation`) niespójna z bardzo krótkim oknem: zachowanie musi być przewidywalne (np. minimalna sensowna granularność lub dokumentowane ograniczenie).
+- Agregacja (`aggregation`) niespójna z bardzo krótkim oknem lub niedozwolona względem LTS: **hard limits** w sekcji „Hard limits / LTS” — odrzucenie w `setConfig` (fail-fast), bez autokorekty.
 - Liczba okien z konfiguracji użytkownika **> 24** (po scaleniu i wyliczeniu `count` / równoważnika): **bezpiecznik** — ten sam rodzaj obsługi co przy FR-014 (komunikat na karcie, brak wykresu serii do czasu poprawy); brak cichego przycinania do 24.
 
 ## Requirements *(mandatory)*

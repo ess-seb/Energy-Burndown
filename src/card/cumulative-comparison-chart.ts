@@ -8,6 +8,7 @@ import {
   type ComparisonMode,
   type ComparisonSeries,
   type ChartRendererConfig,
+  type MergedTimeWindowConfig,
   type ResolvedWindow,
   type TimeSeriesPoint
 } from "./types";
@@ -21,8 +22,9 @@ import {
   comparisonPeriodFromResolvedWindows
 } from "./ha-api";
 import {
-  mergeTimeWindowConfig,
-  validateMergedTimeWindowConfig,
+  assertLtsHardLimits,
+  assertMergedTimeWindowConfig,
+  buildMergedTimeWindowConfig,
   resolveTimeWindows
 } from "./time-windows";
 import { EChartsRenderer } from "./echarts-renderer";
@@ -98,6 +100,9 @@ export class EnergyHorizonCard extends LitElement implements LovelaceCard {
   declare _config: CardConfig;
   _state: CardState = { status: "loading" };
 
+  /** Merged preset + `time_window` + card `aggregation` — updated in `setConfig`, used in `_loadData`. */
+  private _mergedTimeWindow!: MergedTimeWindowConfig;
+
   private _chartRenderer?: EChartsRenderer;
 
   static styles = energyHorizonCardStyles;
@@ -148,6 +153,9 @@ export class EnergyHorizonCard extends LitElement implements LovelaceCard {
       comparison_preset,
       ...(show_forecast !== undefined ? { show_forecast } : {})
     } as CardConfig;
+    this._mergedTimeWindow = buildMergedTimeWindowConfig(this._config);
+    assertLtsHardLimits(this._mergedTimeWindow);
+    assertMergedTimeWindowConfig(this._mergedTimeWindow);
     this._state = { status: "loading" };
   }
 
@@ -204,40 +212,19 @@ export class EnergyHorizonCard extends LitElement implements LovelaceCard {
     const resolved = resolveLocale(this.hass, this._config);
     const localize = createLocalize(resolved.language);
 
-    const mergedBase = mergeTimeWindowConfig({
-      mode: this._config.comparison_preset,
-      timeWindowPartial: this._config.time_window,
-      periodOffset: this._config.period_offset
-    });
-    const merged = {
-      ...mergedBase,
-      aggregation:
-        mergedBase.aggregation ??
-        this._config.aggregation ??
-        ("day" as const)
-    };
-
-    const validated = validateMergedTimeWindowConfig(merged);
-    if (!validated.ok) {
-      this._state = {
-        status: "error",
-        errorMessage: validated.errorKey,
-        ...(validated.errorParams && { errorParams: validated.errorParams })
-      };
-      return;
-    }
+    const merged = this._mergedTimeWindow;
 
     const windows = resolveTimeWindows(
-      validated.merged,
+      merged,
       now,
       resolved.timeZone,
       24,
-      validated.merged.aggregation ?? "day"
+      merged.aggregation ?? "day"
     );
     const period = comparisonPeriodFromResolvedWindows(
       windows,
       resolved.timeZone,
-      validated.merged.aggregation ?? "day"
+      merged.aggregation ?? "day"
     );
     const queries = buildLtsQueriesForWindows(windows, this._config.entity);
 
@@ -318,7 +305,7 @@ export class EnergyHorizonCard extends LitElement implements LovelaceCard {
       const summary = computeSummary(scaledSeries);
       const { forecastPeriodBuckets } = buildChartTimeline(
         windows,
-        validated.merged,
+        merged,
         resolved.timeZone,
         this._config.comparison_preset
       );
@@ -341,7 +328,7 @@ export class EnergyHorizonCard extends LitElement implements LovelaceCard {
         textSummary,
         period,
         resolvedWindows: windows,
-        mergedTimeWindow: validated.merged
+        mergedTimeWindow: merged
       };
     } catch (e) {
       console.error(e);

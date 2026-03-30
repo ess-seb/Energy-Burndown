@@ -15,12 +15,22 @@ W konfiguracji Lovelace kanoniczny klucz YAML to `comparison_preset` (legacy: `c
 - **Output**: `MergedTimeWindowConfig` (plain object)
 - **Behavior**: Deep merge preset → partial; brak mutacji wejścia.
 
+### `assertLtsHardLimits` (lub równoważna walidacja w karcie)
+
+- **Input**: scalona konfiguracja po `mergeTimeWindowConfig` + efektywne `aggregation` z poziomu karty (`CardConfig`).
+- **Output**: brak (void) albo **rzuca** `Error` z czytelnym komunikatem po angielsku (wzór kart Lovelace).
+- **Behavior**: **Gwarancja publiczna** — naruszenie twardych limitów **rekordera / LTS** (minimalna rozdzielczość **1 godzina**) powoduje **fail-fast** w `setConfig` zanim karta ustawi stan ładowania lub wywoła zapytania LTS:
+  - `anchor` spoza zbioru: `start_of_year`, `start_of_month`, `start_of_hour`, `now`;
+  - `duration` krótsza niż 1 h po parsowaniu;
+  - jawna `aggregation` spoza `hour` \| `day` \| `week` \| `month` (wartość „brak” jest OK — wtedy domyślne `day` nie jest autokorektą błędnego tokenu).
+- **Brak autokorekty** — wyłącznie odrzucenie z wyjątkiem.
+
 ### `validateMergedTimeWindowConfig`
 
 - **Input**: `MergedTimeWindowConfig`, opcje `{ maxWindows?: number }` (domyślnie `24`)
 - **Output**:  
   `{ ok: true, merged: MergedTimeWindowConfig } | { ok: false, errorKey: string, errorParams?: Record<string, string | number> }`
-- **Behavior**: Nie rzuca wyjątków dla typowych błędów użytkownika.
+- **Behavior**: Nie rzuca wyjątków dla typowych błędów użytkownika (np. `step` ≤ 0, `count` > 24) — te ścieżki zwracają `ok: false`. **Hard limits LTS** są obsługiwane osobno przez `assertLtsHardLimits` / równoważne sprawdzenie w karcie (**throw**), aby użytkownik widział standardowy overlay błędu Lovelace przy edycji YAML.
 
 ### `resolveTimeWindows`
 

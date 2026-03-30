@@ -46,7 +46,12 @@ Struktura **wewnętrzna** (nie eksponowana w YAML):
 | `count` ∈ [1, 24] | FR-016 |
 | `step` po parsowaniu > 0 (żadnych zerowych/ujemnych) | Edge cases + FR-003 |
 | Wymagane pola do wyliczenia okien obecne | FR-014 |
+| **`anchor`** (jeśli podany): wyłącznie `start_of_year`, `start_of_month`, `start_of_hour`, `now` (zgodnie z resolve); inne wartości → błąd (hard limits LTS) | [spec.md — Hard limits / LTS](./spec.md) |
+| **`duration`**: po parsowaniu skuteczna długość ≥ **1 h** (≥ 3 600 000 ms); poniżej → błąd | Hard limits LTS |
+| **`aggregation`** (efektywna po merge z `CardConfig.aggregation`): dokładnie `hour` \| `day` \| `week` \| `month` albo brak (domyślne `day` tylko gdy pole nie podane); inny string z YAML → błąd | Hard limits LTS |
 | Błąd → `ValidationResult { ok: false, errorKey: string, params?: Record }` | Konstytucja + FR-014 |
+
+**Hard limits (LTS)**: naruszenia powyższych reguł kotwicy / `duration` / `aggregation` są wykrywane **fail-fast** przy konfiguracji karty (`setConfig`) — standardowy błąd Lovelace (`throw`), patrz [contracts/time-windows-engine.md](./contracts/time-windows-engine.md).
 
 ## 5. `ResolvedWindow` (wyjście silnika)
 
@@ -85,9 +90,11 @@ Rozszerzenie obecnego `ComparisonSeries`:
 ## 8. Stany przejść (uproszczone)
 
 ```text
-setConfig → merge → validate
-  → fail → error (bez fetch)
+setConfig → merge → assertLtsHardLimits → validate
+  → fail → throw (hard limits) lub error state (validation keys)
   → ok → loading → Promise.all(fetch per window) → map → ready | no-data | error
 ```
+
+Szczegół: **assertLtsHardLimits** (kotwica, `duration` ≥ 1 h, dozwolona `aggregation`) — przy naruszeniu `throw` zanim karta przejdzie w `loading` / fetch LTS.
 
 **Release (SC-005):** potwierdzenie czytelności wiki dla użytkowników zewnętrznych — procedura w [release-readiness.md](./release-readiness.md) (zadanie T030 w `tasks.md`; uzupełniane po implementacji, poza `checklists/`).

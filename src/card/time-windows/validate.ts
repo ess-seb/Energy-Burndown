@@ -60,3 +60,26 @@ export function validateMergedTimeWindowConfig(
 
   return { ok: true, merged };
 }
+
+/**
+ * Fail-fast for Lovelace: same rules as {@link validateMergedTimeWindowConfig}, but throws
+ * with English messages instead of i18n keys.
+ */
+export function assertMergedTimeWindowConfig(
+  merged: MergedTimeWindowConfig,
+  options?: { maxWindows?: number }
+): void {
+  const result = validateMergedTimeWindowConfig(merged, options);
+  if (result.ok) return;
+
+  if (result.errorKey === "status.config_too_many_windows") {
+    const max = result.errorParams?.max ?? 24;
+    throw new Error(
+      `Energy Horizon: too many time windows (maximum ${String(max)}).`
+    );
+  }
+
+  throw new Error(
+    "Energy Horizon: invalid time_window configuration. Check anchor, duration, step, count, and offset in YAML."
+  );
+}

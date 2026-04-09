@@ -6,11 +6,17 @@ import { CanvasRenderer } from 'echarts/renderers';
 import type { ECharts } from 'echarts/core';
 import type { EChartsOption } from 'echarts';
 
-import type { ComparisonSeries, ChartRendererConfig, TimeSeriesPoint } from './types';
+import type {
+  ComparisonSeries,
+  ChartRendererConfig,
+  ChartThemeResolved,
+  TimeSeriesPoint
+} from './types';
 import {
   formatAdaptiveTickLabel,
   formatForcedTickLabel
 } from './axis/axis-label-format';
+import { trendResolvedLineColor } from './trend-visual';
 import { formatTooltipHeader } from './axis/tooltip-format';
 
 // Register modular ECharts components at module level (FR-016)
@@ -226,19 +232,16 @@ export class EChartsRenderer {
   }
 
   /**
-   * Read Home Assistant theme tokens from the card host (`getComputedStyle`).
+   * Resolve chart colors from injected `chartTheme` or the card host (`getComputedStyle`).
    */
-  private getHaThemeTokens(): {
-    referenceLine: string;
-    /** Horizontal grid lines (`yAxis.splitLine`); also used for tooltip border and axis-pointer shadow tint. */
-    grid: string;
-    primaryText: string;
-    tooltipBackground: string;
-    tooltipBorder: string;
-  } {
-    const styles = getComputedStyle(this.getThemeHost());
+  private resolveChartTheme(rendererConfig: ChartRendererConfig): ChartThemeResolved {
+    if (rendererConfig.chartTheme) {
+      return rendererConfig.chartTheme;
+    }
 
-    const referenceLine =
+    const styles = getComputedStyle(this.getThemeHost());
+    const seriesCurrent = this.resolveColor(rendererConfig.primaryColor);
+    const seriesReference =
       styles.getPropertyValue('--secondary-text-color').trim() || 'rgba(127, 127, 127, 0.4)';
     const grid =
       styles.getPropertyValue('--divider-color').trim() || 'rgba(127, 127, 127, 0.3)';
@@ -252,12 +255,31 @@ export class EChartsRenderer {
 
     const tooltipBorder = grid;
 
+    const trendHigher =
+      styles.getPropertyValue('--error-color').trim() || '#f44336';
+    const trendLower =
+      styles.getPropertyValue('--success-color').trim() || '#4caf50';
+    const trendSimilar =
+      styles.getPropertyValue('--secondary-text-color').trim() || 'rgba(127, 127, 127, 0.55)';
+    const trendUnknown =
+      styles.getPropertyValue('--disabled-text-color').trim() || trendSimilar;
+
+    const todayFullHeightLine = grid || 'rgba(127, 127, 127, 0.35)';
+    const referenceDotBorder = tooltipBackground || '#ffffff';
+
     return {
-      referenceLine,
+      seriesCurrent,
+      seriesReference,
+      referenceDotBorder,
       grid,
       primaryText,
       tooltipBackground,
-      tooltipBorder
+      tooltipBorder,
+      todayFullHeightLine,
+      trendHigher,
+      trendLower,
+      trendSimilar,
+      trendUnknown
     };
   }
 
@@ -342,14 +364,7 @@ export class EChartsRenderer {
     fullTimeline: number[],
     rendererConfig: ChartRendererConfig,
     labels: { current: string; reference: string },
-    primaryColor: string,
-    theme: {
-      referenceLine: string;
-      grid: string;
-      primaryText: string;
-      tooltipBackground: string;
-      tooltipBorder: string;
-    }
+    theme: ChartThemeResolved
   ): EChartsOption {
     // Keep a fixed visual gap between axis ticks and tick labels.
     // For yAxis labels this manifests as spacing on the right side of the label;
@@ -376,29 +391,60 @@ export class EChartsRenderer {
     const yMaxEps = Math.max(1e-12, Math.abs(yMax) * 1e-9);
 
     const xMax = Math.max(fullTimeline.length - 1, 0);
-    // Use an interval that places ticks at exactly 0, 25%, 50%, 75% and max.
-    // With interval=1 and 365 ticks ECharts' hideOverlap misdetects collisions
-    // between empty-string labels and hides edge (0 / max) labels entirely.
-    const xInterval = xMax > 0 ? Math.max(1, Math.round(xMax / 4)) : 1;
-    const xLabelStops = new Set<number>([
-      0,
-      xInterval,
-      xInterval * 2,
-      xInterval * 3,
-      xMax
-    ]);
+    const xIntervalLegacy = xMax > 0 ? Math.max(1, Math.round(xMax / 4)) : 1;
+    const currentSeriesVisible = currentValues.some((v) => v !== null);
+    const mode = rendererConfig.xAxisMode ?? "adaptive";
+
+    const todayMs = new Date();
+    todayMs.setHours(0, 0, 0, 0);
+    const todayTimestamp = todayMs.getTime();
+    const todaySlotIndex = fullTimeline.indexOf(todayTimestamp);
+
+    const xLabelStops = (() => {
+      if (mode === "forced") {
+        return new Set<number>([
+          0,
+          xIntervalLegacy,
+          xIntervalLegacy * 2,
+          xIntervalLegacy * 3,
+          xMax
+        ]);
+      }
+      if (currentSeriesVisible) {
+        const stops = new Set<number>([0, xMax]);
+        if (todaySlotIndex >= 0) {
+          stops.add(todaySlotIndex);
+        }
+        return stops;
+      }
+      return new Set<number>([
+        0,
+        xIntervalLegacy,
+        xIntervalLegacy * 2,
+        xIntervalLegacy * 3,
+        xMax
+      ]);
+    })();
+
+    const xAxisTickInterval =
+      mode === "forced"
+        ? xIntervalLegacy
+        : currentSeriesVisible
+          ? 1
+          : xIntervalLegacy;
+
     const formatXAxisLabel = (value: number): string => {
       const tick = Math.round(value);
       if (tick < 0 || tick > xMax) return '';
       if (!xLabelStops.has(tick)) return '';
       if (tick >= fullTimeline.length) return '';
 
-      const mode = rendererConfig.xAxisMode ?? "adaptive";
+      const modeInner = rendererConfig.xAxisMode ?? "adaptive";
       const zone = rendererConfig.haTimeZone ?? "UTC";
       const labelLocale =
         rendererConfig.xAxisLabelLocale ?? rendererConfig.language ?? "en";
 
-      if (mode === "forced" && rendererConfig.xAxisFormatPattern) {
+      if (modeInner === "forced" && rendererConfig.xAxisFormatPattern) {
         const ms = fullTimeline[tick]!;
         return formatForcedTickLabel(
           ms,
@@ -417,12 +463,6 @@ export class EChartsRenderer {
         agg
       );
     };
-
-    // Today slot (needed for forecast + legend order; same semantics as previous block order)
-    const todayMs = new Date();
-    todayMs.setHours(0, 0, 0, 0);
-    const todayTimestamp = todayMs.getTime();
-    const todaySlotIndex = fullTimeline.indexOf(todayTimestamp);
 
     const fillCurrentOpacity = Math.min(
       Math.max(rendererConfig.fillCurrentOpacity, 0),
@@ -445,9 +485,9 @@ export class EChartsRenderer {
       series.push({
         name: ctx.name,
         type: 'line',
-        color: theme.referenceLine,
+        color: theme.seriesReference,
         data: ctx.values.map((y, i) => (y !== null ? [i, y] : null)),
-        lineStyle: { color: theme.referenceLine, width: 1, opacity: 0.42 },
+        lineStyle: { color: theme.seriesReference, width: 1, opacity: 0.42 },
         areaStyle: { opacity: 0 },
         connectNulls: false,
         showSymbol: false,
@@ -465,11 +505,11 @@ export class EChartsRenderer {
       series.push({
         name: labels.reference,
         type: 'line',
-        color: theme.referenceLine,
+        color: theme.seriesReference,
         data: referenceValues.map((y, i) => (y !== null ? [i, y] : null)),
-        lineStyle: { color: theme.referenceLine, width: 1.5 },
+        lineStyle: { color: theme.seriesReference, width: 1.5 },
         areaStyle: {
-          color: theme.referenceLine,
+          color: theme.seriesReference,
           opacity: rendererConfig.fillReference ? fillReferenceOpacity : 0
         },
         connectNulls: false,
@@ -481,10 +521,10 @@ export class EChartsRenderer {
           focus: 'series',
           showSymbol: true,
           symbolSize: 6,
-          itemStyle: { color: theme.referenceLine },
-          lineStyle: { color: theme.referenceLine }
+          itemStyle: { color: theme.seriesReference },
+          lineStyle: { color: theme.seriesReference }
         },
-        itemStyle: { color: theme.referenceLine }
+        itemStyle: { color: theme.seriesReference }
       });
 
       const dashedReferenceValues = this.buildDashedNullGapValues(referenceValues);
@@ -492,16 +532,16 @@ export class EChartsRenderer {
         series.push({
           name: `${labels.reference} (dashed)`,
           type: 'line',
-          color: theme.referenceLine,
+          color: theme.seriesReference,
           data: dashedReferenceValues.map((y, i) => (y !== null ? [i, y] : null)),
-          lineStyle: { type: 'dashed', color: theme.referenceLine, width: 1.5 },
+          lineStyle: { type: 'dashed', color: theme.seriesReference, width: 1.5 },
           areaStyle: {
             opacity: 0
           },
           connectNulls: false,
           showSymbol: false,
           smooth: false,
-          itemStyle: { color: theme.referenceLine },
+          itemStyle: { color: theme.seriesReference },
           showInLegend: false,
           silent: true,
           tooltip: { show: false },
@@ -511,6 +551,7 @@ export class EChartsRenderer {
     }
 
     const solidCurrentSeriesIndex = series.length;
+    const primaryColor = theme.seriesCurrent;
     series.push({
       name: labels.current,
       type: 'line',
@@ -560,28 +601,42 @@ export class EChartsRenderer {
       }
     }
 
-    // Today marker computation (T010)
+    // Today: full-height guide line + optional delta segment between series (Figma §2.1)
 
     if (todaySlotIndex >= 0) {
       const todayCurrentY = currentValues[todaySlotIndex] ?? null;
       const todayReferenceY = referenceValues[todaySlotIndex] ?? null;
 
-      // Compute yTop for vertical marker line (Variant A/B from FR-004)
-      let markLineY: number | undefined;
-      if (todayCurrentY !== null && todayReferenceY !== null) {
-        markLineY = Math.max(todayCurrentY, todayReferenceY);
-      } else if (todayCurrentY !== null) {
-        markLineY = todayCurrentY;
-      } else if (todayReferenceY !== null) {
-        markLineY = todayReferenceY;
-      }
+      const deltaColor = trendResolvedLineColor(theme, rendererConfig.chartTrend);
 
-      // Add today marker line and points to current series
-      const markLineData: any[] = [];
-      if (markLineY !== undefined) {
-        markLineData.push([{ coord: [todaySlotIndex, markLineY] }, { coord: [todaySlotIndex, 0] }]);
-      } else {
-        markLineData.push([{ xAxis: todaySlotIndex }, { xAxis: todaySlotIndex }]);
+      const markLineData: any[] = [
+        {
+          xAxis: todaySlotIndex,
+          lineStyle: {
+            color: theme.todayFullHeightLine,
+            type: 'dashed',
+            width: 1
+          }
+        }
+      ];
+
+      if (
+        todayCurrentY !== null &&
+        todayReferenceY !== null &&
+        Math.abs(todayCurrentY - todayReferenceY) > yMaxEps
+      ) {
+        const yLo = Math.min(todayCurrentY, todayReferenceY);
+        const yHi = Math.max(todayCurrentY, todayReferenceY);
+        markLineData.push([
+          {
+            coord: [todaySlotIndex, yLo],
+            lineStyle: { color: deltaColor, width: 3, type: 'solid' }
+          },
+          {
+            coord: [todaySlotIndex, yHi],
+            lineStyle: { color: deltaColor, width: 3, type: 'solid' }
+          }
+        ]);
       }
 
       const markPointData: any[] = [];
@@ -598,7 +653,7 @@ export class EChartsRenderer {
         silent: true,
         symbol: ['none', 'none'],
         data: markLineData,
-        lineStyle: { type: 'dashed', color: primaryColor, width: 1.5 }
+        lineStyle: { type: 'dashed', color: theme.todayFullHeightLine, width: 1 }
       };
 
       (series[solidCurrentSeriesIndex] as any).markPoint = {
@@ -606,16 +661,21 @@ export class EChartsRenderer {
         data: markPointData
       };
 
-      // Add reference series today mark point (T011)
       if (solidReferenceSeriesIndex !== undefined && todayReferenceY !== null) {
         (series[solidReferenceSeriesIndex] as any).markPoint = {
           silent: true,
-          data: [{
-            coord: [todaySlotIndex, todayReferenceY],
-            symbol: 'circle',
-            symbolSize: 6,
-            itemStyle: { color: theme.referenceLine }
-          }]
+          data: [
+            {
+              coord: [todaySlotIndex, todayReferenceY],
+              symbol: 'circle',
+              symbolSize: 7,
+              itemStyle: {
+                color: theme.seriesReference,
+                borderColor: theme.referenceDotBorder,
+                borderWidth: 2
+              }
+            }
+          ]
         };
       }
 
@@ -789,7 +849,7 @@ export class EChartsRenderer {
         type: 'value',
         min: 0,
         max: xMax,
-        interval: xInterval,
+        interval: xAxisTickInterval,
         // For `value` axis ECharts typings expect a tuple; [0,0] means "no gap".
         boundaryGap: [0, 0],
         splitLine: { show: false },
@@ -824,11 +884,20 @@ export class EChartsRenderer {
         axisLabel: {
           color: theme.primaryText,
           formatter: (value: number) => {
-            const formatted = yAxisNumberFormatter.format(value);
+            const vMid = yMax / 2;
+            const tolMid = Math.max(yMax * 0.02, 1e-9);
+            const isZero = Math.abs(value - 0) <= yMaxEps;
+            const isMid = Math.abs(value - vMid) <= tolMid;
             const isMaxTick = Math.abs(value - yMax) <= yMaxEps;
+            if (!isZero && !isMid && !isMaxTick) {
+              return '';
+            }
 
-            // unit is pre-scaled by scaleSeriesValues() in cumulative-comparison-chart.ts
-            return isMaxTick && yAxisUnit ? `${formatted} ${yAxisUnit}` : formatted;
+            const formatted = yAxisNumberFormatter.format(value);
+            if (isMaxTick && yAxisUnit) {
+              return `${formatted} ${yAxisUnit}`;
+            }
+            return formatted;
           },
           margin: tickLabelGapPx,
           // Ensures the margin translates to spacing on the right side.
@@ -886,7 +955,7 @@ export class EChartsRenderer {
         )
       })) ?? [];
 
-    const theme = this.getHaThemeTokens();
+    const theme = this.resolveChartTheme(rendererConfig);
 
     const hash = JSON.stringify({
       c: currentValues,
@@ -905,7 +974,6 @@ export class EChartsRenderer {
     this.lastSyncedMinHeightTotalPx = undefined;
     this.container.style.minHeight = '';
 
-    const primaryColor = this.resolveColor(rendererConfig.primaryColor);
     const option = this.buildOption(
       currentValues,
       referenceValues,
@@ -913,7 +981,6 @@ export class EChartsRenderer {
       fullTimeline,
       rendererConfig,
       labels,
-      primaryColor,
       theme
     );
 

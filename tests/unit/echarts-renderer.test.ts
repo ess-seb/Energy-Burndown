@@ -1259,4 +1259,134 @@ describe('EChartsRenderer', () => {
       document.body.removeChild(container);
     });
   });
+
+  describe("v0.5.0 X-axis tick interval (adaptive)", () => {
+    function miniConfig(overrides: Partial<ChartRendererConfig> = {}): ChartRendererConfig {
+      return {
+        primaryColor: "#00ADEF",
+        fillCurrent: true,
+        fillReference: false,
+        fillCurrentOpacity: 40,
+        fillReferenceOpacity: 40,
+        connectNulls: false,
+        comparisonMode: "year_over_year",
+        language: "en-US",
+        numberLocale: "en-US",
+        precision: 1,
+        forecastLabel: "Forecast",
+        showForecast: false,
+        showLegend: false,
+        unit: "kWh",
+        periodLabel: "",
+        haTimeZone: "UTC",
+        primaryAggregation: "day",
+        mergedDurationMs: 86400000 * 30,
+        showReferenceComparison: true,
+        windowAlignStartsMs: [],
+        ...overrides
+      };
+    }
+
+    it("uses interval 1 when adaptive mode and current series has points", () => {
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+
+      const day0 = Date.UTC(2026, 0, 1);
+      const fullTimeline = Array.from(
+        { length: 10 },
+        (_, i) => day0 + i * 86400000
+      );
+
+      const comparisonSeries: ComparisonSeries = {
+        current: {
+          points: fullTimeline.map((ts, i) => ({
+            timestamp: ts + 100,
+            value: i + 1
+          })),
+          unit: "kWh",
+          periodLabel: "Cur",
+          total: 10
+        },
+        reference: {
+          points: fullTimeline.map((ts, i) => ({
+            timestamp: ts + 100,
+            value: i
+          })),
+          unit: "kWh",
+          periodLabel: "Ref",
+          total: 9
+        },
+        aggregation: "day",
+        time_zone: "UTC"
+      };
+
+      const renderer = new EChartsRenderer(container);
+      renderer.update(
+        comparisonSeries,
+        fullTimeline,
+        miniConfig({
+          windowAlignStartsMs: [day0, day0],
+          referencePeriodStart: day0
+        }),
+        { current: "Current", reference: "Reference" }
+      );
+
+      expect(setOptionMock).toHaveBeenCalled();
+      const [option] = setOptionMock.mock.calls[0] as [Record<string, unknown>];
+      expect((option.xAxis as { interval?: number }).interval).toBe(1);
+
+      renderer.destroy();
+      document.body.removeChild(container);
+    });
+
+    it("uses legacy coarse interval when adaptive but current series is empty", () => {
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+
+      const day0 = Date.UTC(2026, 0, 1);
+      const fullTimeline = Array.from(
+        { length: 10 },
+        (_, i) => day0 + i * 86400000
+      );
+
+      const comparisonSeries: ComparisonSeries = {
+        current: {
+          points: [],
+          unit: "kWh",
+          periodLabel: "Cur",
+          total: 0
+        },
+        reference: {
+          points: fullTimeline.map((ts, i) => ({
+            timestamp: ts + 100,
+            value: i
+          })),
+          unit: "kWh",
+          periodLabel: "Ref",
+          total: 9
+        },
+        aggregation: "day",
+        time_zone: "UTC"
+      };
+
+      const renderer = new EChartsRenderer(container);
+      renderer.update(
+        comparisonSeries,
+        fullTimeline,
+        miniConfig({
+          windowAlignStartsMs: [day0, day0],
+          referencePeriodStart: day0
+        }),
+        { current: "Current", reference: "Reference" }
+      );
+
+      const [option] = setOptionMock.mock.calls[0] as [Record<string, unknown>];
+      const xMax = 9;
+      const expectedLegacy = Math.max(1, Math.round(xMax / 4));
+      expect((option.xAxis as { interval?: number }).interval).toBe(expectedLegacy);
+
+      renderer.destroy();
+      document.body.removeChild(container);
+    });
+  });
 });

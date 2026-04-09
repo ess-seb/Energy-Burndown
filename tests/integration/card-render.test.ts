@@ -2,6 +2,11 @@ import { describe, it, expect } from "vitest";
 import "../helpers/setup-dom";
 import "../../src/index";
 import type { HomeAssistant } from "../../src/ha-types";
+import type {
+  CardState,
+  ComparisonPeriod,
+  ComparisonSeries
+} from "../../src/card/types";
 
 describe("energy-horizon-card integration", () => {
   it("can be instantiated without crashing", () => {
@@ -121,8 +126,221 @@ describe("energy-horizon-card integration", () => {
     const shadowText = el.shadowRoot!.textContent || "";
     // Assert that "Historical value" translation key is NOT present
     expect(shadowText).not.toContain("historical_value");
-    // Assert that "Consumption in reference period" IS present
-    expect(shadowText).toContain("Consumption in reference period");
+    expect(shadowText).toContain("Forecast");
+    expect(shadowText).toContain("Total");
+  });
+
+  it("ready: delta chip shows placeholders when difference is missing", async () => {
+    const el = document.createElement("energy-horizon-card") as import("../../src/card/cumulative-comparison-chart").EnergyHorizonCard & {
+      setConfig: (c: unknown) => void;
+      hass: HomeAssistant;
+      _state: unknown;
+      updateComplete: Promise<boolean>;
+    };
+    document.body.appendChild(el);
+    if (typeof el.setConfig !== "function") return;
+
+    const period: ComparisonPeriod = {
+      current_start: new Date(Date.UTC(2024, 0, 1)),
+      current_end: new Date(Date.UTC(2024, 11, 31)),
+      reference_start: new Date(Date.UTC(2023, 0, 1)),
+      reference_end: new Date(Date.UTC(2023, 11, 31)),
+      aggregation: "day",
+      time_zone: "UTC"
+    };
+
+    const comparisonSeries: ComparisonSeries = {
+      current: {
+        points: [{ timestamp: Date.UTC(2024, 0, 1), value: 100 }],
+        unit: "kWh",
+        periodLabel: "2024",
+        total: 100
+      },
+      reference: {
+        points: [{ timestamp: Date.UTC(2023, 0, 1), value: 90 }],
+        unit: "kWh",
+        periodLabel: "2023",
+        total: 90
+      },
+      aggregation: "day",
+      time_zone: "UTC"
+    };
+
+    el.setConfig({
+      type: "custom:energy-horizon-card",
+      entity: "sensor.energy",
+      comparison_preset: "year_over_year"
+    });
+    el.hass = {
+      language: "en",
+      locale: { language: "en", number_format: "language" },
+      config: { time_zone: "UTC" },
+      states: {
+        "sensor.energy": {
+          state: "10",
+          attributes: { friendly_name: "Energy", unit_of_measurement: "kWh" }
+        }
+      },
+      connection: {
+        sendMessagePromise: async () => ({})
+      }
+    } as HomeAssistant;
+
+    const ready: CardState = {
+      status: "ready",
+      period,
+      comparisonSeries,
+      resolvedWindows: [
+        {
+          index: 0,
+          id: "a",
+          role: "current",
+          start: new Date(Date.UTC(2024, 0, 1)),
+          end: new Date(Date.UTC(2024, 11, 31)),
+          aggregation: "day"
+        },
+        {
+          index: 1,
+          id: "b",
+          role: "reference",
+          start: new Date(Date.UTC(2023, 0, 1)),
+          end: new Date(Date.UTC(2023, 11, 31)),
+          aggregation: "day"
+        }
+      ],
+      mergedTimeWindow: {
+        duration: "1y",
+        currentEndIsNow: true,
+        referenceFullPeriod: true
+      },
+      summary: {
+        current_cumulative: 100,
+        reference_cumulative: 90,
+        difference: undefined,
+        differencePercent: undefined,
+        unit: "kWh"
+      },
+      textSummary: { trend: "unknown", unit: "kWh" },
+      forecast: { enabled: false, confidence: "low", unit: "kWh" }
+    };
+
+    (el as { _state: CardState })._state = ready;
+    await el.updateComplete;
+
+    const chip = el.shadowRoot?.querySelector(".ebc-delta-chip");
+    expect(chip).not.toBeNull();
+    expect(chip!.textContent).toContain("---");
+    expect(chip!.textContent).toContain("kWh");
+    document.body.removeChild(el);
+  });
+
+  it("ready: incomplete reference text only in warning section", async () => {
+    const el = document.createElement("energy-horizon-card") as import("../../src/card/cumulative-comparison-chart").EnergyHorizonCard & {
+      setConfig: (c: unknown) => void;
+      hass: HomeAssistant;
+      _state: unknown;
+      updateComplete: Promise<boolean>;
+    };
+    document.body.appendChild(el);
+    if (typeof el.setConfig !== "function") return;
+
+    const period: ComparisonPeriod = {
+      current_start: new Date(Date.UTC(2024, 0, 1)),
+      current_end: new Date(Date.UTC(2024, 11, 31)),
+      reference_start: new Date(Date.UTC(2023, 0, 1)),
+      reference_end: new Date(Date.UTC(2023, 11, 31)),
+      aggregation: "day",
+      time_zone: "UTC"
+    };
+
+    const comparisonSeries: ComparisonSeries = {
+      current: {
+        points: [{ timestamp: Date.UTC(2024, 0, 1), value: 100 }],
+        unit: "kWh",
+        periodLabel: "2024",
+        total: 100
+      },
+      reference: {
+        points: [{ timestamp: Date.UTC(2023, 0, 1), value: 90 }],
+        unit: "kWh",
+        periodLabel: "2023",
+        total: 90
+      },
+      aggregation: "day",
+      time_zone: "UTC"
+    };
+
+    el.setConfig({
+      type: "custom:energy-horizon-card",
+      entity: "sensor.energy",
+      comparison_preset: "year_over_year"
+    });
+    el.hass = {
+      language: "en",
+      locale: { language: "en", number_format: "language" },
+      config: { time_zone: "UTC" },
+      states: {
+        "sensor.energy": {
+          state: "10",
+          attributes: { friendly_name: "Energy", unit_of_measurement: "kWh" }
+        }
+      },
+      connection: {
+        sendMessagePromise: async () => ({})
+      }
+    } as HomeAssistant;
+
+    const ready: CardState = {
+      status: "ready",
+      period,
+      comparisonSeries,
+      resolvedWindows: [
+        {
+          index: 0,
+          id: "a",
+          role: "current",
+          start: new Date(Date.UTC(2024, 0, 1)),
+          end: new Date(Date.UTC(2024, 11, 31)),
+          aggregation: "day"
+        },
+        {
+          index: 1,
+          id: "b",
+          role: "reference",
+          start: new Date(Date.UTC(2023, 0, 1)),
+          end: new Date(Date.UTC(2023, 11, 31)),
+          aggregation: "day"
+        }
+      ],
+      mergedTimeWindow: {
+        duration: "1y",
+        currentEndIsNow: true,
+        referenceFullPeriod: true
+      },
+      summary: {
+        current_cumulative: 100,
+        reference_cumulative: null,
+        difference: undefined,
+        differencePercent: undefined,
+        unit: "kWh"
+      },
+      textSummary: { trend: "unknown", unit: "kWh" },
+      forecast: { enabled: false, confidence: "low", unit: "kWh" }
+    };
+
+    (el as { _state: CardState })._state = ready;
+    await el.updateComplete;
+
+    const root = el.shadowRoot!;
+    const warn = root.querySelector(".ebc-section--warning");
+    expect(warn).not.toBeNull();
+    expect(warn!.textContent).toContain("Reference data for this period is incomplete");
+
+    const comp = root.querySelector(".ebc-section--comparison");
+    expect(comp!.textContent).not.toContain(
+      "Reference data for this period is incomplete"
+    );
+    document.body.removeChild(el);
   });
 });
 

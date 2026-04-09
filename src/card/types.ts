@@ -196,6 +196,11 @@ export interface TextSummary {
 export interface ForecastStats {
   enabled: boolean;
   forecast_total?: number;
+  /**
+   * Total energy (or entity quantity) over the **entire** reference LTS window — sum of
+   * per-bucket `rawValue` increments (Figma **Total** / §1.3). Not the aligned
+   * “to today” value from the first comparison panel.
+   */
   reference_total?: number;
   confidence: "low" | "medium" | "high";
   /** True when rawTrend is strictly below 0.3 or strictly above 3.3 (anomalous reference year). */
@@ -215,6 +220,23 @@ export interface CardState {
   period?: ComparisonPeriod;
   resolvedWindows?: ResolvedWindow[];
   mergedTimeWindow?: MergedTimeWindowConfig;
+}
+
+/** Theme colors read from the card host via `getComputedStyle` (US-7 / T020). */
+export interface ChartThemeResolved {
+  seriesCurrent: string;
+  seriesReference: string;
+  referenceDotBorder: string;
+  grid: string;
+  primaryText: string;
+  tooltipBackground: string;
+  tooltipBorder: string;
+  /** Full-height “today” guide line (subtle; not the delta segment). */
+  todayFullHeightLine: string;
+  trendHigher: string;
+  trendLower: string;
+  trendSimilar: string;
+  trendUnknown: string;
 }
 
 export interface ChartRendererConfig {
@@ -269,5 +291,9 @@ export interface ChartRendererConfig {
   mergedDurationMs?: number;
   /** Luxon pattern from `tooltip_format` when set. */
   tooltipFormatPattern?: string;
+  /** When set, chart uses these instead of calling `getComputedStyle` on the container. */
+  chartTheme?: ChartThemeResolved;
+  /** Consumption trend vs reference — drives delta-at-today segment color (US-6). */
+  chartTrend?: Trend;
 }
 

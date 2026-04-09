@@ -472,6 +472,14 @@ export function computeSummary(series: ComparisonSeries): SummaryStats {
   };
 }
 
+/**
+ * Sum of per-bucket increments (`rawValue`) over the full reference LTS series —
+ * total consumption for the **whole** reference window (Figma **Total** / §1.3).
+ */
+export function fullReferenceWindowRawTotal(points: TimeSeriesPoint[]): number {
+  return points.reduce((acc, p) => acc + (p.rawValue ?? 0), 0);
+}
+
 export function computeForecast(
   series: ComparisonSeries,
   periodTotalBuckets: number
@@ -564,7 +572,7 @@ export function computeForecast(
     .slice(splitIdx + 1)
     .reduce((acc, p) => acc + (p.rawValue ?? 0), 0);
 
-  const reference_total = B + C;
+  const reference_total = fullReferenceWindowRawTotal(referencePoints);
   let forecast_total = A + C * trend;
 
   // Never forecast below known cumulative (monotonicity guarantee)

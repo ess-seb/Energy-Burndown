@@ -5,13 +5,15 @@ import {
   type CardConfig,
   type CardConfigInput,
   type CardState,
+  type ChartRendererConfig,
+  type ChartThemeResolved,
   type ComparisonMode,
   type ComparisonSeries,
-  type ChartRendererConfig,
   type MergedTimeWindowConfig,
   type ResolvedWindow,
   type TimeSeriesPoint
 } from "./types";
+import { trendMdiIcon, trendToneClass } from "./trend-visual";
 import {
   mapLtsResponseToCumulativeSeries,
   computeSummary,
@@ -510,6 +512,54 @@ export class EnergyHorizonCard extends LitElement implements LovelaceCard {
     return dur ? durationToMillis(dur) : 0;
   }
 
+  /** Theme tokens for ECharts — read from `:host` CSS variables (US-7 / T020). */
+  private _resolveChartTheme(): ChartThemeResolved {
+    const host = this as unknown as HTMLElement;
+    const readVar = (prop: string): string =>
+      typeof globalThis.getComputedStyle === "function"
+        ? globalThis.getComputedStyle(host).getPropertyValue(prop).trim()
+        : "";
+    const fromConfig = (this._config.primary_color ?? "").trim();
+    const seriesCurrent =
+      fromConfig ||
+      readVar("--eh-series-current") ||
+      readVar("--accent-color") ||
+      readVar("--primary-color") ||
+      "#03a9f4";
+    const seriesReference =
+      readVar("--secondary-text-color") || "rgba(127, 127, 127, 0.4)";
+    const grid =
+      readVar("--divider-color") || "rgba(127, 127, 127, 0.3)";
+    const primaryText =
+      readVar("--primary-text-color") || "rgba(0, 0, 0, 0.87)";
+    const tooltipBackground =
+      readVar("--ha-card-background") ||
+      readVar("--card-background-color") ||
+      "#ffffff";
+    const trendHigher = readVar("--error-color") || "#f44336";
+    const trendLower = readVar("--success-color") || "#4caf50";
+    const trendSimilar =
+      readVar("--secondary-text-color") || "rgba(127, 127, 127, 0.55)";
+    const trendUnknown = readVar("--disabled-text-color") || trendSimilar;
+    const todayFullHeightLine = grid || "rgba(127, 127, 127, 0.35)";
+    const referenceDotBorder = tooltipBackground || "#ffffff";
+
+    return {
+      seriesCurrent,
+      seriesReference,
+      referenceDotBorder,
+      grid,
+      primaryText,
+      tooltipBackground,
+      tooltipBorder: grid,
+      todayFullHeightLine,
+      trendHigher,
+      trendLower,
+      trendSimilar,
+      trendUnknown
+    };
+  }
+
   private _buildRendererConfig(fullTimeline: number[] = []): ChartRendererConfig {
     const resolved = resolveLocale(this.hass ?? null, this._config);
     const language = resolved.language;
@@ -552,7 +602,9 @@ export class EnergyHorizonCard extends LitElement implements LovelaceCard {
         primaryAggregation: "day",
         fullTimeline,
         mergedDurationMs,
-        tooltipFormatPattern: tf || undefined
+        tooltipFormatPattern: tf || undefined,
+        chartTheme: this._resolveChartTheme(),
+        chartTrend: "unknown"
       };
     }
 
@@ -606,7 +658,9 @@ export class EnergyHorizonCard extends LitElement implements LovelaceCard {
       primaryAggregation: period.aggregation,
       fullTimeline,
       mergedDurationMs,
-      tooltipFormatPattern: tf || undefined
+      tooltipFormatPattern: tf || undefined,
+      chartTheme: this._resolveChartTheme(),
+      chartTrend: this._state.textSummary?.trend ?? "unknown"
     };
   }
 
@@ -664,10 +718,9 @@ export class EnergyHorizonCard extends LitElement implements LovelaceCard {
     const showIcon = this._config.show_icon !== false;
     const effectiveIcon = this._config.icon?.trim() || undefined;
 
-    const canRenderEntityIcon = !!entityState; // ha-state-icon will compute a default icon if attributes.icon is missing
+    const canRenderEntityIcon = !!entityState;
     const shouldRenderHeader =
-      (showTitle && !!effectiveTitle) ||
-      (showIcon && (!!effectiveIcon || canRenderEntityIcon));
+      (showIcon && (!!effectiveIcon || canRenderEntityIcon)) || showTitle;
 
     const numberLocale = numberFormatToLocale(
       resolved.numberFormat,
@@ -758,20 +811,6 @@ export class EnergyHorizonCard extends LitElement implements LovelaceCard {
           }`
         : null;
 
-    const differenceValue =
-      !singleWindow &&
-      summary != null &&
-      summary.difference != null
-        ? formatSigned(summary.difference, numberFormatter, displayUnit)
-        : null;
-
-    const differencePercentValue =
-      !singleWindow &&
-      summary != null &&
-      summary.differencePercent != null
-        ? formatSigned(summary.differencePercent, percentFormatter, "%")
-        : null;
-
     const shouldShowForecast =
       !singleWindow &&
       forecast != null &&
@@ -782,7 +821,7 @@ export class EnergyHorizonCard extends LitElement implements LovelaceCard {
 
     const isMom = this._config.comparison_preset === "month_over_month";
 
-    let heading: string | null = null;
+    let narrativeText: string | null = null;
     if (textSummary && !singleWindow) {
       const diffText =
         textSummary.diffValue != null
@@ -791,132 +830,157 @@ export class EnergyHorizonCard extends LitElement implements LovelaceCard {
 
       switch (textSummary.trend) {
         case "higher":
-          heading = this._localizeOrError(
+          narrativeText = this._localizeOrError(
             localize,
             isMom ? "text_summary.higher_mom" : "text_summary.higher",
             diffText ? { diff: diffText } : undefined
           );
           break;
         case "lower":
-          heading = this._localizeOrError(
+          narrativeText = this._localizeOrError(
             localize,
             isMom ? "text_summary.lower_mom" : "text_summary.lower",
             diffText ? { diff: diffText } : undefined
           );
           break;
         case "similar":
-          heading = this._localizeOrError(
+          narrativeText = this._localizeOrError(
             localize,
             isMom ? "text_summary.similar_mom" : "text_summary.similar"
           );
           break;
         case "unknown":
         default:
-          heading = this._localizeOrError(localize, "text_summary.no_reference");
+          narrativeText = this._localizeOrError(
+            localize,
+            "text_summary.no_reference"
+          );
           break;
       }
     }
 
+    const trendUi = textSummary?.trend ?? "unknown";
+    const deltaChipAbs =
+      !singleWindow && summary != null && summary.difference != null
+        ? formatSigned(summary.difference, numberFormatter, displayUnit)
+        : !singleWindow && summary != null
+          ? `--- ${displayUnit}`
+          : "";
+    const deltaChipPct =
+      !singleWindow && summary != null && summary.differencePercent != null
+        ? formatSigned(summary.differencePercent, percentFormatter, "%")
+        : !singleWindow && summary != null
+          ? "--- %"
+          : "";
+
+    const showWarningStrip =
+      !singleWindow && summary != null && summary.reference_cumulative == null;
+
     return html`<ha-card class="ebc-card">
       <div class="content ebc-content">
         ${shouldRenderHeader
-          ? html`<div class="ebc-title-row">
-              ${showIcon
-                ? effectiveIcon
-                  ? html`<ha-icon class="ebc-icon" .icon=${effectiveIcon}></ha-icon>`
-                  : entityState
-                    ? html`<ha-state-icon
-                        class="ebc-icon"
-                        .hass=${this.hass}
-                        .stateObj=${entityState}
-                      ></ha-state-icon>`
-                    : null
-                : null}
-              ${showTitle && !!effectiveTitle
-                ? html`<span class="ebc-title">${effectiveTitle}</span>`
-                : null}
+          ? html`<div
+              class="ebc-section ebc-section--header"
+              role="region"
+              aria-label=${this._localizeOrError(localize, "section.header")}
+            >
+              <div class="ebc-header-row">
+                ${showIcon
+                  ? html`<div class="ebc-header-icon-wrap">
+                      ${effectiveIcon
+                        ? html`<ha-icon class="ebc-icon" .icon=${effectiveIcon}></ha-icon>`
+                        : entityState
+                          ? html`<ha-state-icon
+                              class="ebc-icon"
+                              .hass=${this.hass}
+                              .stateObj=${entityState}
+                            ></ha-state-icon>`
+                          : null}
+                    </div>`
+                  : null}
+                ${showTitle
+                  ? html`<div class="ebc-header-text">
+                      ${effectiveTitle
+                        ? html`<div class="ebc-header-title">${effectiveTitle}</div>`
+                        : null}
+                      <div class="ebc-header-entity">${this._config.entity}</div>
+                    </div>`
+                  : null}
+              </div>
             </div>`
           : null}
 
-        ${heading ? html`<div class="heading ebc-header">${heading}</div>` : null}
-
         ${summary
-          ? html`<div class="summary ebc-stats">
-              <div class="summary-row">
-                <span class="label">${currentPeriodLabel}</span>
-                <span class="value">${currentSummaryValue}</span>
+          ? html`<div
+              class="ebc-section ebc-section--comparison"
+              role="region"
+              aria-label=${this._localizeOrError(localize, "section.comparison")}
+            >
+              <div class="ebc-comparison-grid">
+                <div class="ebc-comparison-col">
+                  <div class="ebc-caption">${currentPeriodLabel}</div>
+                  <div class="ebc-value ebc-value--current">
+                    ${currentSummaryValue}
+                  </div>
+                </div>
+                <div class="ebc-comparison-divider" aria-hidden="true"></div>
+                <div class="ebc-comparison-col">
+                  <div class="ebc-caption">${referencePeriodLabel}</div>
+                  <div class="ebc-value ebc-value--reference">
+                    ${referenceSummaryValue ?? `--- ${displayUnit}`}
+                  </div>
+                </div>
               </div>
-
-              ${referenceSummaryValue
-                ? html`<div class="summary-row">
-                    <span class="label">${referencePeriodLabel}</span>
-                    <span class="value">${referenceSummaryValue}</span>
-                  </div>`
-                : null}
-
-              ${differenceValue
-                ? html`<div class="summary-row">
-                    <span class="label"
-                      >${this._localizeOrError(localize, "summary.difference")}</span
-                    >
-                    <span class="value">${differenceValue}</span>
-                  </div>`
-                : null}
-
-              ${differencePercentValue
-                ? html`<div class="summary-row">
-                    <span class="label"
-                      >${this._localizeOrError(
-                        localize,
-                        "summary.difference_percent"
-                      )}</span
-                    >
-                    <span class="value">${differencePercentValue}</span>
-                  </div>`
-                : null}
-
-              ${summary.reference_cumulative == null
-                ? html`<div class="summary-note">
-                    ${this._localizeOrError(
+              ${!singleWindow
+                ? html`<div
+                    class="ebc-delta-chip ${trendToneClass(trendUi)}"
+                    aria-label=${this._localizeOrError(
                       localize,
-                      "summary.incomplete_reference"
+                      "summary.difference"
                     )}
+                  >
+                    <span class="ebc-delta-abs">${deltaChipAbs}</span>
+                    <span class="ebc-delta-sep" aria-hidden="true">|</span>
+                    <span class="ebc-delta-pct">${deltaChipPct}</span>
                   </div>`
                 : null}
             </div>`
           : null}
 
         ${shouldShowForecast && forecast
-          ? html`<div class="forecast ebc-forecast">
-              <div class="summary-row">
-                <span class="label"
-                  >${this._localizeOrError(
-                    localize,
-                    "forecast.current_forecast"
-                  )}</span
-                >
-                <span class="value"
-                  >${numberFormatter.format(
-                    forecast.forecast_total ?? 0
-                  )} ${forecastUnit}</span
-                >
+          ? html`<div
+              class="ebc-section ebc-section--forecast-total"
+              role="region"
+              aria-label=${this._localizeOrError(
+                localize,
+                "section.forecast_total"
+              )}
+            >
+              <div class="ebc-surface-grid">
+                <div class="ebc-surface-col">
+                  <div class="ebc-caption ebc-caption--strong">
+                    ${this._localizeOrError(localize, "forecast.panel_forecast")}
+                  </div>
+                  <div class="ebc-value ebc-value--current">
+                    ${numberFormatter.format(forecast.forecast_total ?? 0)}
+                    ${forecastUnit}
+                  </div>
+                </div>
+                <div class="ebc-comparison-divider" aria-hidden="true"></div>
+                <div class="ebc-surface-col">
+                  <div class="ebc-caption ebc-caption--strong">
+                    ${this._localizeOrError(localize, "forecast.panel_total")}
+                  </div>
+                  <div class="ebc-value ebc-value--reference">
+                    ${forecast.reference_total != null
+                      ? html`${numberFormatter.format(
+                          forecast.reference_total
+                        )} ${forecastUnit}`
+                      : html`--- ${forecastUnit}`}
+                  </div>
+                </div>
               </div>
-              ${forecast.reference_total != null
-                ? html`<div class="summary-row">
-                    <span class="label"
-                      >${this._localizeOrError(
-                        localize,
-                        "forecast.reference_consumption"
-                      )}</span
-                    >
-                    <span class="value"
-                      >${numberFormatter.format(
-                        forecast.reference_total
-                      )} ${forecastUnit}</span
-                    >
-                  </div>`
-                : null}
-              <div class="summary-note">
+              <div class="ebc-forecast-confidence">
                 ${this._localizeOrError(localize, "forecast.confidence", {
                   confidence: forecast.confidence
                 })}
@@ -924,7 +988,37 @@ export class EnergyHorizonCard extends LitElement implements LovelaceCard {
             </div>`
           : null}
 
-        <div class="chart-container ebc-chart"></div>
+        <div
+          class="ebc-section ebc-section--chart"
+          role="region"
+          aria-label=${this._localizeOrError(localize, "section.chart")}
+        >
+          <div class="chart-container ebc-chart"></div>
+        </div>
+
+        ${narrativeText
+          ? html`<div
+              class="ebc-section ebc-section--comment"
+              role="region"
+              aria-label=${this._localizeOrError(localize, "section.comment")}
+            >
+              <ha-icon
+                class="ebc-comment-icon ${trendToneClass(trendUi)}"
+                .icon=${trendMdiIcon(trendUi)}
+              ></ha-icon>
+              <div class="ebc-comment-text">${narrativeText}</div>
+            </div>`
+          : null}
+
+        ${showWarningStrip
+          ? html`<div
+              class="ebc-section ebc-section--warning"
+              role="region"
+              aria-label=${this._localizeOrError(localize, "section.warning")}
+            >
+              ${this._localizeOrError(localize, "summary.incomplete_reference")}
+            </div>`
+          : null}
       </div>
     </ha-card>`;
   }

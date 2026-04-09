@@ -29,8 +29,7 @@ function resolveTitleLogic(
   const canRenderEntityIcon = !!entityState;
 
   const shouldRenderHeader =
-    (showTitle && !!effectiveTitle) ||
-    (showIcon && (!!effectiveIcon || canRenderEntityIcon));
+    (showIcon && (!!effectiveIcon || canRenderEntityIcon)) || showTitle;
 
   return {
     showTitle,

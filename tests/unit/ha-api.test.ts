@@ -3,6 +3,7 @@ import {
   computeSummary,
   computeForecast,
   computeTextSummary,
+  fullReferenceWindowRawTotal,
   mapLtsResponseToSeries
 } from "../../src/card/ha-api";
 import { formatSigned } from "../../src/card/cumulative-comparison-chart";
@@ -79,6 +80,17 @@ function makeSeries(values: number[]): ComparisonSeries {
     time_zone: "UTC"
   };
 }
+
+describe("fullReferenceWindowRawTotal", () => {
+  it("sums rawValue increments for the full reference window", () => {
+    const pts = [
+      { timestamp: 1, value: 1, rawValue: 1 },
+      { timestamp: 2, value: 3, rawValue: 2 },
+      { timestamp: 3, value: 6, rawValue: 3 }
+    ];
+    expect(fullReferenceWindowRawTotal(pts)).toBe(6);
+  });
+});
 
 describe("computeForecast", () => {
   const T0 = Date.UTC(2024, 0, 1);

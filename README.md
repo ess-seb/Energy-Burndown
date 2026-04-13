@@ -16,6 +16,8 @@ Elegant energy comparisons for Home Assistant dashboards — **cumulative usage*
 
 > This card is built for **long-term statistics** (energy history), not live power charts.
 
+![Energy Horizon Card screenshot](wiki-publish/ehorizon-screenshot.png)
+
 ## Quick start (copy/paste)
 
 ### 1) Install

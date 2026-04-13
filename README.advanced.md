@@ -4,6 +4,8 @@ This document is the **authoritative reference** for configuring `custom:energy-
 
 **Prerequisites:** the entity must have **long-term statistics** (LTS) recorded by the Home Assistant recorder — the card calls the WebSocket API `recorder/statistics_during_period`.
 
+![Energy Horizon Card screenshot](wiki-publish/ehorizon-screenshot.png)
+
 ---
 
 ## Table of contents
